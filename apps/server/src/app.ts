@@ -1,7 +1,13 @@
 import Fastify, { FastifyInstance } from 'fastify';
+import type Database from 'better-sqlite3';
 
-export function buildApp(): FastifyInstance {
+export interface BuildAppOptions {
+  db: Database.Database;
+}
+
+export function buildApp(options: BuildAppOptions): FastifyInstance {
   const app = Fastify({ logger: false });
+  app.decorate('db', options.db);
 
   app.get('/api/health', async () => ({ status: 'ok' }));
 

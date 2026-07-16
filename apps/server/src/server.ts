@@ -1,8 +1,14 @@
+import 'dotenv/config';
 import { buildApp } from './app.js';
+import { loadConfig, ensureSkillVaultDirs } from './config.js';
+import { createDb } from './db/connection.js';
 
-const app = buildApp();
+const config = loadConfig();
+ensureSkillVaultDirs(config);
+const db = createDb(config.dbPath);
+const app = buildApp({ db });
 
-app.listen({ port: 3001, host: '0.0.0.0' }, (err, address) => {
+app.listen({ port: config.port, host: '0.0.0.0' }, (err, address) => {
   if (err) {
     app.log.error(err);
     process.exit(1);
