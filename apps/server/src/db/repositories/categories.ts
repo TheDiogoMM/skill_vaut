@@ -34,6 +34,13 @@ export class CategoriesRepository {
     return row ? toCategory(row) : undefined;
   }
 
+  findById(id: number): Category | undefined {
+    const row = this.db.prepare('SELECT * FROM categories WHERE id = ?').get(id) as
+      | CategoryRow
+      | undefined;
+    return row ? toCategory(row) : undefined;
+  }
+
   findOrCreate(name: string): Category {
     return this.findByName(name) ?? this.create(name);
   }

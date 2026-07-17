@@ -16,7 +16,9 @@ export async function categoriesRoutes(app: FastifyInstance) {
     '/api/categories/:id',
     async (request, reply) => {
       const id = Number(request.params.id);
-      const category = repo.rename(id, request.body.name.trim());
+      const name = request.body?.name?.trim();
+      if (!name) return reply.status(400).send({ error: 'name is required' });
+      const category = repo.rename(id, name);
       if (!category) return reply.status(404).send({ error: 'category not found' });
       return category;
     }
@@ -26,7 +28,19 @@ export async function categoriesRoutes(app: FastifyInstance) {
     '/api/categories/:id/merge',
     async (request, reply) => {
       const sourceId = Number(request.params.id);
-      repo.merge(sourceId, request.body.target_id);
+      const targetId = Number(request.body?.target_id);
+
+      if (sourceId === targetId) {
+        return reply.status(400).send({ error: 'source and target must differ' });
+      }
+      if (!repo.findById(sourceId)) {
+        return reply.status(404).send({ error: 'source category not found' });
+      }
+      if (!repo.findById(targetId)) {
+        return reply.status(404).send({ error: 'target category not found' });
+      }
+
+      repo.merge(sourceId, targetId);
       return reply.status(204).send();
     }
   );
