@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createDb } from '../db/connection.js';
+import { loadConfig } from '../config.js';
 import { buildApp } from '../app.js';
 
 describe('categories routes', () => {
   it('creates, lists, renames, and merges categories', async () => {
-    const app = buildApp({ db: createDb(':memory:') });
+    const app = buildApp({ db: createDb(':memory:'), config: loadConfig({} as NodeJS.ProcessEnv) });
 
     const createA = await app.inject({
       method: 'POST',
@@ -43,7 +44,7 @@ describe('categories routes', () => {
   });
 
   it('returns 400 from PATCH when the body is missing a name', async () => {
-    const app = buildApp({ db: createDb(':memory:') });
+    const app = buildApp({ db: createDb(':memory:'), config: loadConfig({} as NodeJS.ProcessEnv) });
 
     const create = await app.inject({
       method: 'POST',
@@ -61,7 +62,7 @@ describe('categories routes', () => {
   });
 
   it('returns 404 from merge when target_id does not refer to a real category', async () => {
-    const app = buildApp({ db: createDb(':memory:') });
+    const app = buildApp({ db: createDb(':memory:'), config: loadConfig({} as NodeJS.ProcessEnv) });
 
     const create = await app.inject({
       method: 'POST',
@@ -79,7 +80,7 @@ describe('categories routes', () => {
   });
 
   it('returns 400 from merge when source and target ids are the same', async () => {
-    const app = buildApp({ db: createDb(':memory:') });
+    const app = buildApp({ db: createDb(':memory:'), config: loadConfig({} as NodeJS.ProcessEnv) });
 
     const create = await app.inject({
       method: 'POST',
