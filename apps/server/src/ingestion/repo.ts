@@ -23,6 +23,12 @@ export interface IngestRepoInput {
   url: string;
 }
 
+export function assertSafeRepoUrl(url: string): void {
+  if (url.startsWith('-')) {
+    throw new Error('invalid repository url');
+  }
+}
+
 export async function ingestRepo(
   config: SkillVaultConfig,
   itemsRepo: ItemsRepository,
@@ -30,6 +36,8 @@ export async function ingestRepo(
   input: IngestRepoInput,
   enrich: typeof enrichContent = enrichContent
 ): Promise<Item> {
+  assertSafeRepoUrl(input.url);
+
   const { fullPath } = resolveUniqueDir(config.reposDir, input.name);
 
   await simpleGit().clone(input.url, fullPath);

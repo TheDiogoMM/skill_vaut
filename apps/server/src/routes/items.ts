@@ -28,7 +28,11 @@ export function itemsRoutes(config: SkillVaultConfig) {
           const url = body.url as string | undefined;
           if (!url) return reply.status(400).send({ error: 'url is required for type=repo' });
           const item = await ingestRepo(config, itemsRepo, categoriesRepo, { name, url });
-          regenerate();
+          try {
+            regenerate();
+          } catch (err) {
+            app.log.error(err, 'failed to regenerate index after item creation');
+          }
           return reply.status(201).send(item);
         }
 

@@ -1,14 +1,26 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { simpleGit } from 'simple-git';
 import { createDb } from '../db/connection.js';
 import { ItemsRepository } from '../db/repositories/items.js';
 import { CategoriesRepository } from '../db/repositories/categories.js';
 import { loadConfig } from '../config.js';
 import { ingestRepo } from './repo.js';
 import type { EnrichmentResult } from '../types.js';
+
+// Wrap the real simple-git implementation with a spy so tests can assert
+// whether `clone` was reached, while still performing real clones for the
+// happy-path test (no behavior change, just observability).
+vi.mock('simple-git', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('simple-git')>();
+  return {
+    ...actual,
+    simpleGit: vi.fn((...args: Parameters<typeof actual.simpleGit>) => actual.simpleGit(...args)),
+  };
+});
 
 function createFixtureRepo(): string {
   const dir = path.join(os.tmpdir(), `skillvault-fixture-repo-${Date.now()}`);
@@ -61,5 +73,36 @@ describe('ingestRepo', () => {
 
     const category = categoriesRepo.findByName('dev-tools');
     expect(item.categoryId).toBe(category?.id);
+  });
+
+  it('rejects a url that looks like a git option before invoking clone', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    fs.mkdirSync(config.reposDir, { recursive: true });
+
+    const db = createDb(':memory:');
+    const itemsRepo = new ItemsRepository(db);
+    const categoriesRepo = new CategoriesRepository(db);
+
+    const stubEnrich = async (): Promise<EnrichmentResult> => ({
+      summary: '',
+      utility: '',
+      category: '',
+      tags: [],
+      source: 'manual',
+    });
+
+    vi.mocked(simpleGit).mockClear();
+
+    await expect(
+      ingestRepo(
+        config,
+        itemsRepo,
+        categoriesRepo,
+        { name: 'Malicious', url: '--upload-pack=/bin/sh' },
+        stubEnrich
+      )
+    ).rejects.toThrow('invalid repository url');
+
+    expect(simpleGit).not.toHaveBeenCalled();
   });
 });
