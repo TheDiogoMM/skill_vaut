@@ -71,6 +71,21 @@ describe('renderIndexMarkdown', () => {
     expect(nameLineMatch).toBeDefined();
     expect(nameLineMatch![0]).toContain('my\\_repo\\*name');
   });
+
+  it('preserves localPath raw (unescaped) inside code span for copy-paste', () => {
+    const itemWithSpecialPath: Item = {
+      ...item,
+      localPath: '/tmp/my_project[env]/repo',
+    };
+    const md = renderIndexMarkdown(buildIndexEntries([itemWithSpecialPath], [category]));
+
+    // Verify localPath contains raw special characters (not escaped backslashes)
+    expect(md).toContain('`/tmp/my_project[env]/repo`');
+    // Explicitly verify the raw characters are present without backslash escapes
+    expect(md).toContain('my_project[env]');
+    // Ensure we don't have escaped versions in the code span
+    expect(md).not.toContain('`/tmp/my\\_project');
+  });
 });
 
 describe('writeIndexFiles', () => {

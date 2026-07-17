@@ -45,10 +45,9 @@ export function renderIndexMarkdown(entries: IndexEntry[]): string {
       const escapedName = escapeMarkdown(entry.name);
       const escapedSummary = escapeMarkdown(entry.summary ?? 'sem resumo');
       const escapedUtility = escapeMarkdown(entry.utility ?? 'n/a');
-      const escapedPath = escapeMarkdown(entry.localPath);
       lines.push(`- **${escapedName}** (${entry.type}) — ${escapedSummary}`);
       lines.push(`  - Utilidade: ${escapedUtility}`);
-      lines.push(`  - Caminho: \`${escapedPath}\``);
+      lines.push(`  - Caminho: \`${entry.localPath}\``);
       lines.push(`  - Tags: ${entry.tags.join(', ') || 'nenhuma'}`);
     }
     lines.push('');
