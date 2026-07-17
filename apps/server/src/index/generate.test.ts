@@ -48,6 +48,29 @@ describe('renderIndexMarkdown', () => {
     expect(md).toContain('## dev-tools');
     expect(md).toContain('my-repo');
   });
+
+  it('escapes markdown special characters in item name, summary, and utility', () => {
+    const itemWithSpecialChars: Item = {
+      ...item,
+      name: 'my_repo*name',
+      summary: 'Summary with _underscore* and **asterisks**',
+      utility: 'Utility with `backticks` [brackets]',
+    };
+    const md = renderIndexMarkdown(buildIndexEntries([itemWithSpecialChars], [category]));
+
+    // Verify escaped characters are present
+    expect(md).toContain('\\*');
+    expect(md).toContain('\\_');
+    expect(md).toContain('\\`');
+    expect(md).toContain('\\[');
+    expect(md).toContain('\\]');
+
+    // Verify unescaped raw characters don't appear in dangerous positions
+    // (not directly adjacent to bold/italic markers in the name field)
+    const nameLineMatch = md.match(/- \*\*.*?\*\*/);
+    expect(nameLineMatch).toBeDefined();
+    expect(nameLineMatch![0]).toContain('my\\_repo\\*name');
+  });
 });
 
 describe('writeIndexFiles', () => {

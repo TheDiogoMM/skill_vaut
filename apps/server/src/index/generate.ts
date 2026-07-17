@@ -12,6 +12,10 @@ export interface IndexEntry {
   localPath: string;
 }
 
+function escapeMarkdown(text: string): string {
+  return text.replace(/[*_`[\]]/g, '\\$&');
+}
+
 export function buildIndexEntries(items: Item[], categories: Category[]): IndexEntry[] {
   const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
   return items.map((item) => ({
@@ -35,12 +39,16 @@ export function renderIndexMarkdown(entries: IndexEntry[]): string {
   }
 
   const lines: string[] = ['# SkillVault Index', ''];
-  for (const [category, categoryEntries] of [...byCategory.entries()].sort()) {
+  for (const [category, categoryEntries] of [...byCategory.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
     lines.push(`## ${category}`, '');
     for (const entry of categoryEntries) {
-      lines.push(`- **${entry.name}** (${entry.type}) — ${entry.summary ?? 'sem resumo'}`);
-      lines.push(`  - Utilidade: ${entry.utility ?? 'n/a'}`);
-      lines.push(`  - Caminho: \`${entry.localPath}\``);
+      const escapedName = escapeMarkdown(entry.name);
+      const escapedSummary = escapeMarkdown(entry.summary ?? 'sem resumo');
+      const escapedUtility = escapeMarkdown(entry.utility ?? 'n/a');
+      const escapedPath = escapeMarkdown(entry.localPath);
+      lines.push(`- **${escapedName}** (${entry.type}) — ${escapedSummary}`);
+      lines.push(`  - Utilidade: ${escapedUtility}`);
+      lines.push(`  - Caminho: \`${escapedPath}\``);
       lines.push(`  - Tags: ${entry.tags.join(', ') || 'nenhuma'}`);
     }
     lines.push('');
