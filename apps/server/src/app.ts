@@ -17,7 +17,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.register(multipart, { attachFieldsToBody: true });
 
   app.get('/api/health', async () => ({ status: 'ok' }));
-  app.register(categoriesRoutes);
+  app.register(categoriesRoutes(options.config));
   app.register(itemsRoutes(options.config));
   app.register(indexRoute(options.config));
 
