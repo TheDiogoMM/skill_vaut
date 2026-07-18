@@ -10,18 +10,10 @@ import type { CategoriesRepository } from '../db/repositories/categories.js';
 import { resolveUniqueDir } from '../slug.js';
 import { enrichContent } from '../enrichment/enrich.js';
 import { assertSafeRepoUrl } from './repo.js';
+import { readFirstExisting, SKILL_CONTENT_CANDIDATES } from '../content.js';
 import type { Item, GlobalInstallStatus } from '../types.js';
 
 const execFileAsync = promisify(execFile);
-const SKILL_FILE_CANDIDATES = ['SKILL.md', 'README.md', 'readme.md'];
-
-function readFirstExisting(dir: string, candidates: string[]): string {
-  for (const name of candidates) {
-    const full = path.join(dir, name);
-    if (fs.existsSync(full)) return fs.readFileSync(full, 'utf-8');
-  }
-  return '';
-}
 
 export type SkillSource =
   | { kind: 'local_path'; path: string }
@@ -80,7 +72,7 @@ export async function ingestSkill(
     globalInstallStatus = await globalInstall(input.source.url);
   }
 
-  const content = readFirstExisting(fullPath, SKILL_FILE_CANDIDATES);
+  const content = readFirstExisting(fullPath, SKILL_CONTENT_CANDIDATES);
   const enrichment = await enrich(config, 'skill', content || sourceValue);
   const category = enrichment.category ? categoriesRepo.findOrCreate(enrichment.category) : null;
 

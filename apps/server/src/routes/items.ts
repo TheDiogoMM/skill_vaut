@@ -11,6 +11,7 @@ import { ingestRepo } from '../ingestion/repo.js';
 import { ingestSkill, type SkillSource } from '../ingestion/skill.js';
 import { ingestMcp } from '../ingestion/mcp.js';
 import { regenerateIndex } from '../index/generate.js';
+import { readItemContent } from '../content.js';
 
 // With @fastify/multipart's `attachFieldsToBody: true`, every plain field on a
 // multipart request arrives as `{ value: <actual value>, ... }` instead of the
@@ -161,7 +162,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
       const { id } = request.params as { id: string };
       const item = itemsRepo.getById(Number(id));
       if (!item) return reply.status(404).send({ error: 'item not found' });
-      return item;
+      return { ...item, content: readItemContent(item) };
     });
 
     app.patch('/api/items/:id', async (request, reply) => {

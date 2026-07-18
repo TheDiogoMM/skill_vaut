@@ -397,3 +397,32 @@ describe('items list/detail/update/delete', () => {
     expect(response.statusCode).toBe(400);
   });
 });
+
+describe('GET /api/items/:id content field', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-content-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it('includes the raw config content for an mcp item', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: {
+        type: 'mcp',
+        name: 'MCP com conteudo',
+        config: { mcpServers: { x: { command: 'npx' } } },
+      },
+    });
+    const item = created.json();
+
+    const response = await app.inject({ method: 'GET', url: `/api/items/${item.id}` });
+    const body = response.json();
+    expect(body.content).toContain('"command": "npx"');
+  });
+});
