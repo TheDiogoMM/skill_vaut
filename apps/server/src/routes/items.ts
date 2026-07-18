@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import type { MultipartFile } from '@fastify/multipart';
 import type { SkillVaultConfig } from '../config.js';
-import { ItemsRepository } from '../db/repositories/items.js';
+import { ItemsRepository, type NewItem, type ItemUpdate } from '../db/repositories/items.js';
 import { CategoriesRepository } from '../db/repositories/categories.js';
 import { ingestRepo } from '../ingestion/repo.js';
 import { ingestSkill, type SkillSource } from '../ingestion/skill.js';
@@ -130,6 +130,57 @@ export function itemsRoutes(config: SkillVaultConfig) {
       } catch (err) {
         return reply.status(422).send({ error: (err as Error).message });
       }
+    });
+
+    app.get('/api/items', async (request) => {
+      const { q, type, category, tag } = request.query as {
+        q?: string;
+        type?: string;
+        category?: string;
+        tag?: string;
+      };
+      return itemsRepo.list({
+        q,
+        type: type as NewItem['type'] | undefined,
+        categoryId: category ? Number(category) : undefined,
+        tag,
+      });
+    });
+
+    app.get('/api/items/:id', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const item = itemsRepo.getById(Number(id));
+      if (!item) return reply.status(404).send({ error: 'item not found' });
+      return item;
+    });
+
+    app.patch('/api/items/:id', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const item = itemsRepo.update(Number(id), request.body as ItemUpdate);
+      if (!item) return reply.status(404).send({ error: 'item not found' });
+      try {
+        regenerate();
+      } catch (err) {
+        app.log.error(err, 'failed to regenerate index after item update');
+      }
+      return item;
+    });
+
+    app.delete('/api/items/:id', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const item = itemsRepo.getById(Number(id));
+      if (!item) return reply.status(404).send({ error: 'item not found' });
+
+      if (fs.existsSync(item.localPath)) {
+        fs.rmSync(item.localPath, { recursive: true, force: true });
+      }
+      itemsRepo.delete(item.id);
+      try {
+        regenerate();
+      } catch (err) {
+        app.log.error(err, 'failed to regenerate index after item deletion');
+      }
+      return reply.status(204).send();
     });
   };
 }

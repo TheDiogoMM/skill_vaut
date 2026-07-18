@@ -271,3 +271,71 @@ describe('POST /api/items (type=mcp)', () => {
     expect(response.json().type).toBe('mcp');
   });
 });
+
+describe('items list/detail/update/delete', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-crud-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  async function createMcpItem(app: ReturnType<typeof buildApp>, name: string) {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'mcp', name, config: { mcpServers: {} } },
+    });
+    return response.json();
+  }
+
+  it('lists items and filters by type', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    await createMcpItem(app, 'MCP Um');
+    await createMcpItem(app, 'MCP Dois');
+
+    const list = await app.inject({ method: 'GET', url: '/api/items?type=mcp' });
+    expect(list.json()).toHaveLength(2);
+  });
+
+  it('returns 404 for a missing item', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const response = await app.inject({ method: 'GET', url: '/api/items/999' });
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('updates an item and regenerates the index', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const created = await createMcpItem(app, 'MCP a Editar');
+    const update = await app.inject({
+      method: 'PATCH',
+      url: `/api/items/${created.id}`,
+      payload: { summary: 'Resumo editado' },
+    });
+    expect(update.json().summary).toBe('Resumo editado');
+  });
+
+  it('deletes an item and removes its local file', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const created = await createMcpItem(app, 'MCP a Apagar');
+    expect(fs.existsSync(created.localPath)).toBe(true);
+
+    const del = await app.inject({ method: 'DELETE', url: `/api/items/${created.id}` });
+    expect(del.statusCode).toBe(204);
+    expect(fs.existsSync(created.localPath)).toBe(false);
+
+    const getAfterDelete = await app.inject({ method: 'GET', url: `/api/items/${created.id}` });
+    expect(getAfterDelete.statusCode).toBe(404);
+  });
+});
