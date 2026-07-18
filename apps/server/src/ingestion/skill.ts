@@ -25,7 +25,7 @@ function readFirstExisting(dir: string, candidates: string[]): string {
 
 export type SkillSource =
   | { kind: 'local_path'; path: string }
-  | { kind: 'upload'; tempFilePath: string; isZip: boolean }
+  | { kind: 'upload'; tempFilePath: string; isZip: boolean; originalFilename?: string }
   | { kind: 'url'; url: string };
 
 export interface IngestSkillInput {
@@ -67,10 +67,10 @@ export async function ingestSkill(
       zip.extractAllTo(fullPath, true);
     } else {
       fs.mkdirSync(fullPath, { recursive: true });
-      fs.copyFileSync(
-        input.source.tempFilePath,
-        path.join(fullPath, path.basename(input.source.tempFilePath))
-      );
+      const destName = input.source.originalFilename
+        ? path.basename(input.source.originalFilename)
+        : path.basename(input.source.tempFilePath);
+      fs.copyFileSync(input.source.tempFilePath, path.join(fullPath, destName));
     }
   } else {
     sourceType = 'url';

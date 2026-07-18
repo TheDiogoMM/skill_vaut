@@ -10,6 +10,18 @@ import { ingestRepo } from '../ingestion/repo.js';
 import { ingestSkill, type SkillSource } from '../ingestion/skill.js';
 import { regenerateIndex } from '../index/generate.js';
 
+// With @fastify/multipart's `attachFieldsToBody: true`, every plain field on a
+// multipart request arrives as `{ value: <actual value>, ... }` instead of the
+// raw value, while file fields keep their real MultipartFile shape. Plain JSON
+// requests are untouched by the multipart plugin, so fields arrive as-is. This
+// helper normalizes both cases so route code can read fields uniformly.
+function fieldValue(field: unknown): string | undefined {
+  if (field && typeof field === 'object' && 'value' in (field as Record<string, unknown>)) {
+    return (field as { value: unknown }).value as string | undefined;
+  }
+  return field as string | undefined;
+}
+
 export function itemsRoutes(config: SkillVaultConfig) {
   return async function (app: FastifyInstance) {
     const itemsRepo = new ItemsRepository(app.db);
@@ -21,8 +33,8 @@ export function itemsRoutes(config: SkillVaultConfig) {
 
     app.post('/api/items', async (request, reply) => {
       const body = request.body as Record<string, unknown>;
-      const type = body.type as string;
-      const name = body.name as string;
+      const type = fieldValue(body.type);
+      const name = fieldValue(body.name);
 
       if (!type || !name) {
         return reply.status(400).send({ error: 'type and name are required' });
@@ -30,7 +42,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
 
       try {
         if (type === 'repo') {
-          const url = body.url as string | undefined;
+          const url = fieldValue(body.url);
           if (!url) return reply.status(400).send({ error: 'url is required for type=repo' });
           const item = await ingestRepo(config, itemsRepo, categoriesRepo, { name, url });
           try {
@@ -42,33 +54,52 @@ export function itemsRoutes(config: SkillVaultConfig) {
         }
 
         if (type === 'skill') {
-          const sourceType = body.source_type as string;
+          const sourceType = fieldValue(body.source_type);
           let source: SkillSource;
 
           if (sourceType === 'local_path') {
-            const localPath = body.path as string;
+            const localPath = fieldValue(body.path);
             if (!localPath) return reply.status(400).send({ error: 'path is required' });
             source = { kind: 'local_path', path: localPath };
           } else if (sourceType === 'url') {
-            const url = body.url as string;
+            const url = fieldValue(body.url);
             if (!url) return reply.status(400).send({ error: 'url is required' });
             source = { kind: 'url', url };
           } else if (sourceType === 'upload') {
             const file = body.file as MultipartFile | undefined;
             if (!file) return reply.status(400).send({ error: 'file is required for upload' });
+            // file.filename is client-controlled; strip any directory components
+            // before it ever touches a filesystem path (prevents path traversal).
+            const originalFilename = path.basename(file.filename);
             const buffer = await file.toBuffer();
-            const tempPath = path.join(os.tmpdir(), `skillvault-upload-${Date.now()}-${file.filename}`);
+            const tempPath = path.join(
+              os.tmpdir(),
+              `skillvault-upload-${Date.now()}-${originalFilename}`
+            );
             fs.writeFileSync(tempPath, buffer);
             source = {
               kind: 'upload',
               tempFilePath: tempPath,
-              isZip: file.filename.toLowerCase().endsWith('.zip'),
+              isZip: originalFilename.toLowerCase().endsWith('.zip'),
+              originalFilename,
             };
           } else {
             return reply.status(400).send({ error: `unsupported source_type: ${sourceType}` });
           }
 
-          const item = await ingestSkill(config, itemsRepo, categoriesRepo, { name, source });
+          let item;
+          try {
+            item = await ingestSkill(config, itemsRepo, categoriesRepo, { name, source });
+          } finally {
+            if (source.kind === 'upload') {
+              try {
+                fs.rmSync(source.tempFilePath, { force: true });
+              } catch (cleanupErr) {
+                app.log.error(cleanupErr, 'failed to clean up temp upload file');
+              }
+            }
+          }
+
           try {
             regenerate();
           } catch (err) {

@@ -13,7 +13,7 @@ export interface BuildAppOptions {
 export function buildApp(options: BuildAppOptions): FastifyInstance {
   const app = Fastify({ logger: false });
   app.decorate('db', options.db);
-  app.register(multipart, { attachFieldsToBody: 'keyValues' });
+  app.register(multipart, { attachFieldsToBody: true });
 
   app.get('/api/health', async () => ({ status: 'ok' }));
   app.register(categoriesRoutes);
