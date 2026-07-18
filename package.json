@@ -4,7 +4,15 @@
   "version": "0.1.0",
   "workspaces": ["apps/*"],
   "scripts": {
-    "dev": "npm run dev -w apps/server",
-    "test": "npm run test -w apps/server"
+    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
+    "test": "npm run test -w apps/server && npm run test -w apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "overrides": {
+    "@vitejs/plugin-react": {
+      "vite": "^6.0.7"
+    }
   }
 }
