@@ -338,4 +338,62 @@ describe('items list/detail/update/delete', () => {
     const getAfterDelete = await app.inject({ method: 'GET', url: `/api/items/${created.id}` });
     expect(getAfterDelete.statusCode).toBe(404);
   });
+
+  it('returns 400 for PATCH with a missing/empty body', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const created = await createMcpItem(app, 'MCP Sem Body');
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/items/${created.id}`,
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('returns 400 for PATCH with a nonexistent categoryId', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const created = await createMcpItem(app, 'MCP Categoria Invalida');
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/items/${created.id}`,
+      payload: { categoryId: 999999 },
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('returns 404 for PATCH on a nonexistent item id', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/items/999',
+      payload: { summary: 'Novo resumo' },
+    });
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('returns 404 for DELETE on a nonexistent item id', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const response = await app.inject({ method: 'DELETE', url: '/api/items/999' });
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('returns 400 for GET /api/items?category= with a non-numeric value', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const response = await app.inject({ method: 'GET', url: '/api/items?category=abc' });
+    expect(response.statusCode).toBe(400);
+  });
 });

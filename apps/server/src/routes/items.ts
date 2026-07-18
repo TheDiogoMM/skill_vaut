@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
 import type { MultipartFile } from '@fastify/multipart';
 import type { SkillVaultConfig } from '../config.js';
@@ -132,17 +133,26 @@ export function itemsRoutes(config: SkillVaultConfig) {
       }
     });
 
-    app.get('/api/items', async (request) => {
+    app.get('/api/items', async (request, reply) => {
       const { q, type, category, tag } = request.query as {
         q?: string;
         type?: string;
         category?: string;
         tag?: string;
       };
+
+      let categoryId: number | undefined;
+      if (category !== undefined) {
+        categoryId = Number(category);
+        if (Number.isNaN(categoryId)) {
+          return reply.status(400).send({ error: 'category must be a number' });
+        }
+      }
+
       return itemsRepo.list({
         q,
         type: type as NewItem['type'] | undefined,
-        categoryId: category ? Number(category) : undefined,
+        categoryId,
         tag,
       });
     });
@@ -156,7 +166,21 @@ export function itemsRoutes(config: SkillVaultConfig) {
 
     app.patch('/api/items/:id', async (request, reply) => {
       const { id } = request.params as { id: string };
-      const item = itemsRepo.update(Number(id), request.body as ItemUpdate);
+
+      if (!request.body || typeof request.body !== 'object') {
+        return reply.status(400).send({ error: 'body is required' });
+      }
+
+      let item;
+      try {
+        item = itemsRepo.update(Number(id), request.body as ItemUpdate);
+      } catch (err) {
+        if (err instanceof Database.SqliteError && err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+          return reply.status(400).send({ error: 'categoryId does not reference an existing category' });
+        }
+        throw err;
+      }
+
       if (!item) return reply.status(404).send({ error: 'item not found' });
       try {
         regenerate();
