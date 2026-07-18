@@ -58,3 +58,31 @@ describe('POST /api/items (type=repo)', () => {
     expect(response.statusCode).toBe(400);
   });
 });
+
+describe('POST /api/items (type=skill, source_type=local_path)', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-skill-route-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it('copies the skill and returns the created item', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const sourceDir = path.join(os.tmpdir(), `skillvault-skill-route-source-${Date.now()}`);
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(path.join(sourceDir, 'SKILL.md'), '# Skill de rota');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'skill', name: 'Skill de Rota', source_type: 'local_path', path: sourceDir },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().type).toBe('skill');
+    fs.rmSync(sourceDir, { recursive: true, force: true });
+  });
+});
