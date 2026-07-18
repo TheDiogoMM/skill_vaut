@@ -4,6 +4,7 @@ import type Database from 'better-sqlite3';
 import type { SkillVaultConfig } from './config.js';
 import { categoriesRoutes } from './routes/categories.js';
 import { itemsRoutes } from './routes/items.js';
+import { indexRoute } from './routes/indexRoute.js';
 
 export interface BuildAppOptions {
   db: Database.Database;
@@ -18,6 +19,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.get('/api/health', async () => ({ status: 'ok' }));
   app.register(categoriesRoutes);
   app.register(itemsRoutes(options.config));
+  app.register(indexRoute(options.config));
 
   return app;
 }
