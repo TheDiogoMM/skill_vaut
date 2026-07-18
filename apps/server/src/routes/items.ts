@@ -8,6 +8,7 @@ import { ItemsRepository } from '../db/repositories/items.js';
 import { CategoriesRepository } from '../db/repositories/categories.js';
 import { ingestRepo } from '../ingestion/repo.js';
 import { ingestSkill, type SkillSource } from '../ingestion/skill.js';
+import { ingestMcp } from '../ingestion/mcp.js';
 import { regenerateIndex } from '../index/generate.js';
 
 // With @fastify/multipart's `attachFieldsToBody: true`, every plain field on a
@@ -100,6 +101,23 @@ export function itemsRoutes(config: SkillVaultConfig) {
             }
           }
 
+          try {
+            regenerate();
+          } catch (err) {
+            app.log.error(err, 'failed to regenerate index after item creation');
+          }
+          return reply.status(201).send(item);
+        }
+
+        if (type === 'mcp') {
+          const mcpConfig = body.config as Record<string, unknown> | undefined;
+          if (!mcpConfig) return reply.status(400).send({ error: 'config is required for type=mcp' });
+          const description = body.description as string | undefined;
+          const item = await ingestMcp(config, itemsRepo, categoriesRepo, {
+            name,
+            config: mcpConfig,
+            description,
+          });
           try {
             regenerate();
           } catch (err) {

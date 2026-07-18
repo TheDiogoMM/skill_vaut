@@ -244,3 +244,30 @@ describe('POST /api/items (type=skill, source_type=upload, real multipart reques
     expect(fs.existsSync(path.join(config.skillvaultHome, '..', 'evil.md'))).toBe(false);
   });
 });
+
+describe('POST /api/items (type=mcp)', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-mcp-route-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it('saves the MCP config and returns the created item', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: {
+        type: 'mcp',
+        name: 'MCP de Rota',
+        config: { mcpServers: { rota: { command: 'npx', args: ['rota-mcp'] } } },
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().type).toBe('mcp');
+  });
+});
