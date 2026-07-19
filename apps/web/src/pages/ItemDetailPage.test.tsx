@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -8,6 +8,10 @@ import type { ItemDetail } from '../types.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+beforeEach(() => {
+  vi.spyOn(api, 'listCategories').mockResolvedValue([]);
 });
 
 function sampleDetail(overrides: Partial<ItemDetail> = {}): ItemDetail {
@@ -88,5 +92,30 @@ describe('ItemDetailPage', () => {
     vi.spyOn(api, 'getItem').mockRejectedValue(new Error('not found'));
     renderWithRoute('999');
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('edits category and tags and saves them', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'getItem').mockResolvedValue(sampleDetail({ tags: ['a', 'b'] }));
+    vi.spyOn(api, 'listCategories').mockResolvedValue([{ id: 5, name: 'dev-tools', createdAt: '' }]);
+    const updateItemSpy = vi.spyOn(api, 'updateItem').mockResolvedValue({
+      ...sampleDetail({ categoryId: 5, tags: ['novo'] }),
+    });
+
+    renderWithRoute('1');
+
+    const categorySelect = await screen.findByLabelText('Categoria');
+    await user.selectOptions(categorySelect, '5');
+
+    const tagsInput = screen.getByLabelText('Tags (separadas por vírgula)');
+    await user.clear(tagsInput);
+    await user.type(tagsInput, 'novo');
+
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => {
+      expect(updateItemSpy).toHaveBeenCalledWith(1, { categoryId: 5, tags: ['novo'] });
+    });
+    expect(await screen.findByText('Salvo!')).toBeInTheDocument();
   });
 });

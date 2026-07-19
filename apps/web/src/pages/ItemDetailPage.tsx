@@ -1,23 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { getItem } from '../api/client.js';
-import type { ItemDetail } from '../types.js';
+import { getItem, listCategories, updateItem } from '../api/client.js';
+import type { Category, ItemDetail } from '../types.js';
 
 export function ItemDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [item, setItem] = useState<ItemDetail | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [copied, setCopied] = useState(false);
+  const [categoryId, setCategoryId] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     setStatus('loading');
-    getItem(Number(id))
-      .then((result) => {
+    Promise.all([getItem(Number(id)), listCategories()])
+      .then(([itemResult, categoriesResult]) => {
         if (cancelled) return;
-        setItem(result);
+        setItem(itemResult);
+        setCategories(categoriesResult);
+        setCategoryId(itemResult.categoryId !== null ? String(itemResult.categoryId) : '');
+        setTagsInput(itemResult.tags.join(', '));
         setStatus('ready');
       })
       .catch(() => {
@@ -35,6 +42,25 @@ export function ItemDetailPage() {
     window.setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleSave() {
+    if (!item) return;
+    setSaveStatus('saving');
+    try {
+      const tags = tagsInput
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      const updated = await updateItem(item.id, {
+        categoryId: categoryId ? Number(categoryId) : null,
+        tags,
+      });
+      setItem({ ...item, ...updated });
+      setSaveStatus('saved');
+    } catch {
+      setSaveStatus('error');
+    }
+  }
+
   if (status === 'loading') return <p>Carregando item...</p>;
   if (status === 'error' || !item) return <p role="alert">Não foi possível carregar o item.</p>;
 
@@ -49,11 +75,28 @@ export function ItemDetailPage() {
           {copied ? 'Copiado!' : 'Copiar caminho'}
         </button>
       </p>
-      <ul>
-        {item.tags.map((tag) => (
-          <li key={tag}>{tag}</li>
-        ))}
-      </ul>
+
+      <div>
+        <label htmlFor="item-category">Categoria</label>
+        <select id="item-category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <option value="">Sem categoria</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+
+        <label htmlFor="item-tags">Tags (separadas por vírgula)</label>
+        <input id="item-tags" type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} />
+
+        <button type="button" onClick={handleSave} disabled={saveStatus === 'saving'}>
+          Salvar
+        </button>
+        {saveStatus === 'saved' && <span>Salvo!</span>}
+        {saveStatus === 'error' && <span role="alert">Erro ao salvar.</span>}
+      </div>
+
       {item.type === 'mcp' ? <pre>{item.content}</pre> : <ReactMarkdown>{item.content}</ReactMarkdown>}
     </article>
   );
