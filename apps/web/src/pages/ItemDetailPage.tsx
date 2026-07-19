@@ -25,6 +25,7 @@ export function ItemDetailPage() {
         setCategories(categoriesResult);
         setCategoryId(itemResult.categoryId !== null ? String(itemResult.categoryId) : '');
         setTagsInput(itemResult.tags.join(', '));
+        setSaveStatus('idle');
         setStatus('ready');
       })
       .catch(() => {

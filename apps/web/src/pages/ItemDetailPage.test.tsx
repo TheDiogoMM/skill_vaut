@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { Link, MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ItemDetailPage } from './ItemDetailPage.js';
 import * as api from '../api/client.js';
 import type { ItemDetail } from '../types.js';
@@ -117,5 +117,44 @@ describe('ItemDetailPage', () => {
       expect(updateItemSpy).toHaveBeenCalledWith(1, { categoryId: 5, tags: ['novo'] });
     });
     expect(await screen.findByText('Salvo!')).toBeInTheDocument();
+  });
+
+  it('resets save status when navigating to a different item', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'getItem').mockImplementation((id: number) =>
+      Promise.resolve(sampleDetail({ id, name: `Item ${id}` }))
+    );
+    vi.spyOn(api, 'updateItem').mockResolvedValue(sampleDetail({ id: 1 }));
+
+    // ItemDetailPage is mounted once at the /items/:id route; React Router
+    // re-renders it with a new useParams() value on navigation rather than
+    // remounting it, so this must navigate via a real <Link> click within the
+    // same MemoryRouter instance (not a separate render/renderWithRoute call)
+    // to reproduce the bug.
+    render(
+      <MemoryRouter initialEntries={['/items/1']}>
+        <Routes>
+          <Route
+            path="/items/:id"
+            element={
+              <>
+                <Link to="/items/2">Ir para item 2</Link>
+                <ItemDetailPage />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Item 1', level: 2 })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    expect(await screen.findByText('Salvo!')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: 'Ir para item 2' }));
+
+    expect(await screen.findByRole('heading', { name: 'Item 2', level: 2 })).toBeInTheDocument();
+    expect(screen.queryByText('Salvo!')).not.toBeInTheDocument();
   });
 });
