@@ -2,6 +2,7 @@
 setlocal enabledelayedexpansion
 
 set "ROOT=%~dp0"
+cd /d "%ROOT%"
 set "WEB_DIST=%ROOT%apps\web\dist"
 set "URL=http://localhost:3001"
 set "HEALTH_URL=%URL%/api/health"
