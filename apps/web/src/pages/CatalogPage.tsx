@@ -82,6 +82,15 @@ export function CatalogPage() {
                 <li key={item.id}>
                   <Link to={`/items/${item.id}`}>{item.name}</Link> <span>({item.type})</span>
                   <p>{item.summary}</p>
+                  <p>{item.utility}</p>
+                  <p>
+                    {item.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </p>
+                  <p>
+                    <code>{item.localPath}</code>
+                  </p>
                 </li>
               ))}
             </ul>

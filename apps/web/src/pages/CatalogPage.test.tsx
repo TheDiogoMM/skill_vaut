@@ -33,7 +33,14 @@ function sampleItem(overrides: Partial<Item> = {}): Item {
 describe('CatalogPage', () => {
   it('groups items by category and renders them', async () => {
     vi.spyOn(api, 'listItems').mockResolvedValue([
-      sampleItem({ id: 1, name: 'Repo A', categoryId: 1 }),
+      sampleItem({
+        id: 1,
+        name: 'Repo A',
+        categoryId: 1,
+        utility: 'Útil para automação de testes',
+        tags: ['cli', 'testing'],
+        localPath: '/skillvault/repos/repo-a',
+      }),
       sampleItem({ id: 2, type: 'mcp', name: 'MCP B', categoryId: null }),
     ]);
     vi.spyOn(api, 'listCategories').mockResolvedValue([{ id: 1, name: 'dev-tools', createdAt: '' }]);
@@ -48,6 +55,10 @@ describe('CatalogPage', () => {
     expect(screen.getByText('Sem categoria')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Repo A' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'MCP B' })).toBeInTheDocument();
+    expect(screen.getByText('Útil para automação de testes')).toBeInTheDocument();
+    expect(screen.getByText('cli')).toBeInTheDocument();
+    expect(screen.getByText('testing')).toBeInTheDocument();
+    expect(screen.getByText('/skillvault/repos/repo-a')).toBeInTheDocument();
   });
 
   it('shows an empty state when there are no items', async () => {
