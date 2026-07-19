@@ -92,6 +92,8 @@ Do escopo original, ainda **não implementado**:
 
 ## Como rodar localmente
 
+**Desenvolvimento** (hot-reload, dois processos):
+
 ```bash
 cd C:\Users\Diogo\Projetos\SkillVault
 npm install
@@ -101,6 +103,14 @@ npm run test          # roda os testes dos dois workspaces
 
 Frontend: http://localhost:5173
 Backend: http://localhost:3001
+
+**Uso diário** (sem terminal, um processo só servindo o frontend buildado):
+
+- `launch.vbs` — builda o frontend na primeira vez (se necessário), sobe o servidor em segundo plano e abre `http://localhost:3001` no navegador. Detecta se o app já está rodando e evita duplicar o processo.
+- `stop.bat` — encerra o servidor.
+- `rebuild.bat` — reconstrói o frontend depois de alterar `apps/web/src` (sem precisar reiniciar o servidor).
+
+Ver `docs/superpowers/specs/2026-07-19-local-launcher-design.md` para o design completo.
 
 ## Convenções de trabalho usadas neste projeto (para próximas sessões)
 
