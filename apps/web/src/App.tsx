@@ -1,8 +1,13 @@
+import { Routes, Route } from 'react-router-dom';
+import { Layout } from './components/Layout.js';
+
 function App() {
   return (
-    <div>
-      <h1>SkillVault</h1>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<div>Catálogo (em construção)</div>} />
+      </Route>
+    </Routes>
   );
 }
 
