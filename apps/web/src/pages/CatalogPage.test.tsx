@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { CatalogPage } from './CatalogPage.js';
 import * as api from '../api/client.js';
 import type { Item } from '../types.js';
 
 afterEach(() => {
+  cleanup();
   vi.restoreAllMocks();
 });
 
@@ -43,7 +45,7 @@ describe('CatalogPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('dev-tools')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'dev-tools' })).toBeInTheDocument();
     expect(screen.getByText('Sem categoria')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Repo A' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'MCP B' })).toBeInTheDocument();
@@ -73,5 +75,29 @@ describe('CatalogPage', () => {
     );
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('refetches items when the filter changes', async () => {
+    const user = userEvent.setup();
+    const listItemsSpy = vi.spyOn(api, 'listItems').mockResolvedValue([]);
+    vi.spyOn(api, 'listCategories').mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Nenhum item cadastrado ainda.');
+    listItemsSpy.mockClear();
+
+    await user.type(screen.getByLabelText('Buscar'), 'ollama');
+
+    await waitFor(
+      () => {
+        expect(listItemsSpy).toHaveBeenCalledWith({ q: 'ollama' });
+      },
+      { timeout: 2000 }
+    );
   });
 });

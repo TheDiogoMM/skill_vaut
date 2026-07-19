@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listItems, listCategories } from '../api/client.js';
-import type { Category, Item } from '../types.js';
+import { SearchFilterBar, type Filters } from '../components/SearchFilterBar.js';
+import type { Category, Item, ItemFilters } from '../types.js';
 
 interface GroupedItems {
   category: string;
@@ -21,50 +22,65 @@ function groupByCategory(items: Item[], categories: Category[]): GroupedItems[] 
     .map(([category, groupItems]) => ({ category, items: groupItems }));
 }
 
+function toApiFilters(filters: Filters): ItemFilters {
+  const apiFilters: ItemFilters = {};
+  if (filters.q) apiFilters.q = filters.q;
+  if (filters.type) apiFilters.type = filters.type;
+  if (filters.category) apiFilters.category = Number(filters.category);
+  if (filters.tag) apiFilters.tag = filters.tag;
+  return apiFilters;
+}
+
 export function CatalogPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [filters, setFilters] = useState<Filters>({ q: '', type: '', category: '', tag: '' });
 
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
-    Promise.all([listItems(), listCategories()])
-      .then(([itemsResult, categoriesResult]) => {
-        if (cancelled) return;
-        setItems(itemsResult);
-        setCategories(categoriesResult);
-        setStatus('ready');
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('error');
-      });
+    const timeoutId = window.setTimeout(() => {
+      Promise.all([listItems(toApiFilters(filters)), listCategories()])
+        .then(([itemsResult, categoriesResult]) => {
+          if (cancelled) return;
+          setItems(itemsResult);
+          setCategories(categoriesResult);
+          setStatus('ready');
+        })
+        .catch(() => {
+          if (!cancelled) setStatus('error');
+        });
+    }, 250);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
     };
-  }, []);
-
-  if (status === 'loading') return <p>Carregando catálogo...</p>;
-  if (status === 'error') return <p role="alert">Não foi possível carregar o catálogo.</p>;
-  if (items.length === 0) return <p>Nenhum item cadastrado ainda.</p>;
+  }, [filters]);
 
   const groups = groupByCategory(items, categories);
 
   return (
     <div>
-      {groups.map((group) => (
-        <section key={group.category}>
-          <h2>{group.category}</h2>
-          <ul>
-            {group.items.map((item) => (
-              <li key={item.id}>
-                <Link to={`/items/${item.id}`}>{item.name}</Link> <span>({item.type})</span>
-                <p>{item.summary}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      <SearchFilterBar categories={categories} onChange={setFilters} />
+      {status === 'loading' && <p>Carregando catálogo...</p>}
+      {status === 'error' && <p role="alert">Não foi possível carregar o catálogo.</p>}
+      {status === 'ready' && items.length === 0 && <p>Nenhum item cadastrado ainda.</p>}
+      {status === 'ready' &&
+        groups.map((group) => (
+          <section key={group.category}>
+            <h2>{group.category}</h2>
+            <ul>
+              {group.items.map((item) => (
+                <li key={item.id}>
+                  <Link to={`/items/${item.id}`}>{item.name}</Link> <span>({item.type})</span>
+                  <p>{item.summary}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
     </div>
   );
 }
