@@ -9,10 +9,5 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
-  },
-  "overrides": {
-    "@vitejs/plugin-react": {
-      "vite": "^6.0.7"
-    }
   }
 }

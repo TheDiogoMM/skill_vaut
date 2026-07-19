@@ -11,10 +11,7 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "paths": {
-      "vitest": ["./node_modules/vitest"]
-    }
+    "strict": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
