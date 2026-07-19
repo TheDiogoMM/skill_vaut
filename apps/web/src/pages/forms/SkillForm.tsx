@@ -68,7 +68,7 @@ export function SkillForm({ onCreated }: SkillFormProps) {
       {tab === 'local_path' && (
         <div>
           <label htmlFor="skill-path">Caminho local da pasta</label>
-          <input id="skill-path" value={localPath} onChange={(e) => setLocalPath(e.target.value)} />
+          <input id="skill-path" value={localPath} onChange={(e) => setLocalPath(e.target.value)} required />
         </div>
       )}
 
@@ -82,7 +82,7 @@ export function SkillForm({ onCreated }: SkillFormProps) {
       {tab === 'url' && (
         <div>
           <label htmlFor="skill-url">URL do repositório da skill</label>
-          <input id="skill-url" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <input id="skill-url" value={url} onChange={(e) => setUrl(e.target.value)} required />
         </div>
       )}
 

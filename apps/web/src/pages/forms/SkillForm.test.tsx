@@ -75,6 +75,31 @@ describe('SkillForm', () => {
     });
   });
 
+  it('does not submit the local_path tab when the path is left empty', async () => {
+    const user = userEvent.setup();
+    const createItemSpy = vi.spyOn(api, 'createItem');
+
+    render(<SkillForm onCreated={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Minha Skill');
+    await user.click(screen.getByRole('button', { name: 'Adicionar skill' }));
+
+    expect(createItemSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not submit the url tab when the url is left empty', async () => {
+    const user = userEvent.setup();
+    const createItemSpy = vi.spyOn(api, 'createItem');
+
+    render(<SkillForm onCreated={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Skill via URL');
+    await user.click(screen.getByRole('tab', { name: 'URL' }));
+    await user.click(screen.getByRole('button', { name: 'Adicionar skill' }));
+
+    expect(createItemSpy).not.toHaveBeenCalled();
+  });
+
   it('shows an error when submitting the upload tab without a file', async () => {
     const user = userEvent.setup();
     const createItemSpy = vi.spyOn(api, 'createItem');
