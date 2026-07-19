@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listItems, listCategories } from '../api/client.js';
 import { SearchFilterBar, type Filters } from '../components/SearchFilterBar.js';
+import { CategoryManager } from '../components/CategoryManager.js';
 import type { Category, Item, ItemFilters } from '../types.js';
 
 interface GroupedItems {
@@ -36,6 +37,11 @@ export function CatalogPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [filters, setFilters] = useState<Filters>({ q: '', type: '', category: '', tag: '' });
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  const refetchCategories = useCallback(() => {
+    setRefreshToken((token) => token + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +63,7 @@ export function CatalogPage() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [filters]);
+  }, [filters, refreshToken]);
 
   const groups = groupByCategory(items, categories);
 
@@ -81,6 +87,7 @@ export function CatalogPage() {
             </ul>
           </section>
         ))}
+      {status === 'ready' && <CategoryManager categories={categories} onChanged={refetchCategories} />}
     </div>
   );
 }

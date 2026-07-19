@@ -99,4 +99,30 @@ describe('CatalogPage', () => {
       { timeout: 2000 }
     );
   });
+
+  it('refetches after a category change is reported by CategoryManager', async () => {
+    const user = userEvent.setup();
+    const listItemsSpy = vi.spyOn(api, 'listItems').mockResolvedValue([]);
+    const listCategoriesSpy = vi
+      .spyOn(api, 'listCategories')
+      .mockResolvedValue([{ id: 1, name: 'dev-tools', createdAt: '' }]);
+    vi.spyOn(api, 'renameCategory').mockResolvedValue({ id: 1, name: 'ferramentas', createdAt: '' });
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole('button', { name: 'Renomear' });
+    listCategoriesSpy.mockClear();
+    listItemsSpy.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'Renomear' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => {
+      expect(listCategoriesSpy).toHaveBeenCalled();
+    });
+  });
 });

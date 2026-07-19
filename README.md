@@ -29,4 +29,4 @@ Aponte o Claude Code para `~/skillvault/index.json` (ou `INDEX.md`) como referê
 
 ## Status
 
-Backend de ingestão completo (skills, repos, MCPs) com enriquecimento via LLM (Ollama → Gemini free tier → manual) e catálogo via API REST. Interface web, recomendador e PWA são fases seguintes — ver `docs/superpowers/specs/`.
+Backend de ingestão completo (skills, repos, MCPs) com enriquecimento via LLM (Ollama → Gemini free tier → manual) e catálogo via API REST. Frontend web completo: catálogo com busca/filtros, detalhe de item com conteúdo renderizado e edição inline de categoria/tags, fluxo de adicionar (repo/skill/mcp) e gestão de categorias (renomear/mesclar). Recomendador e PWA são fases seguintes — ver `docs/superpowers/specs/`.
