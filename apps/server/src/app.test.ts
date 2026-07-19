@@ -53,3 +53,52 @@ describe('static frontend serving', () => {
     expect(response.statusCode).toBe(404);
   });
 });
+
+describe('SPA fallback and 404 handling', () => {
+  const dir = path.join(os.tmpdir(), `skillvault-webdist-spa-test-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('serves index.html for an unmatched non-API route when webDistPath exists', async () => {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'index.html'), '<html>SkillVault SPA</html>');
+
+    const app = buildApp({
+      db: createDb(':memory:'),
+      config: loadConfig({} as NodeJS.ProcessEnv),
+      webDistPath: dir,
+    });
+
+    const response = await app.inject({ method: 'GET', url: '/items/42' });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBe('<html>SkillVault SPA</html>');
+  });
+
+  it('returns a JSON 404 for an unmatched /api/* route when webDistPath exists', async () => {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'index.html'), '<html>SkillVault SPA</html>');
+
+    const app = buildApp({
+      db: createDb(':memory:'),
+      config: loadConfig({} as NodeJS.ProcessEnv),
+      webDistPath: dir,
+    });
+
+    const response = await app.inject({ method: 'GET', url: '/api/does-not-exist' });
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: 'Not found' });
+  });
+
+  it('keeps the default 404 behavior when webDistPath has no index.html (dev mode)', async () => {
+    const app = buildApp({
+      db: createDb(':memory:'),
+      config: loadConfig({} as NodeJS.ProcessEnv),
+      webDistPath: dir,
+    });
+
+    const response = await app.inject({ method: 'GET', url: '/items/42' });
+    expect(response.statusCode).toBe(404);
+  });
+});

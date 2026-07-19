@@ -36,6 +36,14 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
   if (fs.existsSync(indexHtmlPath)) {
     app.register(fastifyStatic, { root: webDistPath });
+
+    app.setNotFoundHandler((request, reply) => {
+      if (request.raw.url?.startsWith('/api/')) {
+        reply.code(404).send({ error: 'Not found' });
+        return;
+      }
+      reply.type('text/html').send(fs.readFileSync(indexHtmlPath));
+    });
   }
 
   return app;
