@@ -1,14 +1,24 @@
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import Fastify, { FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
 import type Database from 'better-sqlite3';
 import type { SkillVaultConfig } from './config.js';
 import { categoriesRoutes } from './routes/categories.js';
 import { itemsRoutes } from './routes/items.js';
 import { indexRoute } from './routes/indexRoute.js';
 
+const defaultWebDistPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../web/dist',
+);
+
 export interface BuildAppOptions {
   db: Database.Database;
   config: SkillVaultConfig;
+  webDistPath?: string;
 }
 
 export function buildApp(options: BuildAppOptions): FastifyInstance {
@@ -20,6 +30,13 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.register(categoriesRoutes(options.config));
   app.register(itemsRoutes(options.config));
   app.register(indexRoute(options.config));
+
+  const webDistPath = options.webDistPath ?? defaultWebDistPath;
+  const indexHtmlPath = path.join(webDistPath, 'index.html');
+
+  if (fs.existsSync(indexHtmlPath)) {
+    app.register(fastifyStatic, { root: webDistPath });
+  }
 
   return app;
 }
