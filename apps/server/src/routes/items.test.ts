@@ -46,6 +46,8 @@ function buildMultipartBody(
   return Buffer.concat(parts);
 }
 
+const noDistPath = path.join(os.tmpdir(), `skillvault-no-dist-${Date.now()}`);
+
 function createFixtureRepo(): string {
   const dir = path.join(os.tmpdir(), `skillvault-route-fixture-${Date.now()}`);
   fs.mkdirSync(dir, { recursive: true });
@@ -68,7 +70,7 @@ describe('POST /api/items (type=repo)', () => {
   it('ingests a repo and returns the created item', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
     const fixtureRepo = createFixtureRepo();
 
     const response = await app.inject({
@@ -86,7 +88,7 @@ describe('POST /api/items (type=repo)', () => {
   it('rejects a repo without a url', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({
       method: 'POST',
@@ -108,7 +110,7 @@ describe('POST /api/items (type=skill, source_type=local_path)', () => {
   it('copies the skill and returns the created item', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const sourceDir = path.join(os.tmpdir(), `skillvault-skill-route-source-${Date.now()}`);
     fs.mkdirSync(sourceDir, { recursive: true });
@@ -136,7 +138,7 @@ describe('POST /api/items (type=skill, source_type=upload, real multipart reques
   it('extracts an uploaded zip via a genuine multipart/form-data request', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const zip = new AdmZip();
     zip.addFile('SKILL.md', Buffer.from('# Skill via multipart zip'));
@@ -167,7 +169,7 @@ describe('POST /api/items (type=skill, source_type=upload, real multipart reques
   it('reads a plain uploaded SKILL.md file for enrichment (not the temp path) and cleans up the temp file', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const fileContent = '# Minha Skill via Upload Direto\n\nConteudo real do arquivo.';
     const boundary = '----SkillVaultBoundaryFile';
@@ -213,7 +215,7 @@ describe('POST /api/items (type=skill, source_type=upload, real multipart reques
   it('sanitizes a path-traversal filename instead of escaping the temp/skill directories', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const boundary = '----SkillVaultBoundaryTraversal';
     const payload = buildMultipartBody(
@@ -255,7 +257,7 @@ describe('POST /api/items (type=mcp)', () => {
   it('saves the MCP config and returns the created item', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({
       method: 'POST',
@@ -291,7 +293,7 @@ describe('items list/detail/update/delete', () => {
   it('lists items and filters by type', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     await createMcpItem(app, 'MCP Um');
     await createMcpItem(app, 'MCP Dois');
@@ -303,7 +305,7 @@ describe('items list/detail/update/delete', () => {
   it('returns 404 for a missing item', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({ method: 'GET', url: '/api/items/999' });
     expect(response.statusCode).toBe(404);
@@ -312,7 +314,7 @@ describe('items list/detail/update/delete', () => {
   it('updates an item and regenerates the index', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const created = await createMcpItem(app, 'MCP a Editar');
     const update = await app.inject({
@@ -326,7 +328,7 @@ describe('items list/detail/update/delete', () => {
   it('deletes an item and removes its local file', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const created = await createMcpItem(app, 'MCP a Apagar');
     expect(fs.existsSync(created.localPath)).toBe(true);
@@ -342,7 +344,7 @@ describe('items list/detail/update/delete', () => {
   it('returns 400 for PATCH with a missing/empty body', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const created = await createMcpItem(app, 'MCP Sem Body');
     const response = await app.inject({
@@ -355,7 +357,7 @@ describe('items list/detail/update/delete', () => {
   it('returns 400 for PATCH with a nonexistent categoryId', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const created = await createMcpItem(app, 'MCP Categoria Invalida');
     const response = await app.inject({
@@ -369,7 +371,7 @@ describe('items list/detail/update/delete', () => {
   it('returns 404 for PATCH on a nonexistent item id', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({
       method: 'PATCH',
@@ -382,7 +384,7 @@ describe('items list/detail/update/delete', () => {
   it('returns 404 for DELETE on a nonexistent item id', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({ method: 'DELETE', url: '/api/items/999' });
     expect(response.statusCode).toBe(404);
@@ -391,7 +393,7 @@ describe('items list/detail/update/delete', () => {
   it('returns 400 for GET /api/items?category= with a non-numeric value', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({ method: 'GET', url: '/api/items?category=abc' });
     expect(response.statusCode).toBe(400);
@@ -408,7 +410,7 @@ describe('GET /api/items/:id content field', () => {
   it('includes the raw config content for an mcp item', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const created = await app.inject({
       method: 'POST',

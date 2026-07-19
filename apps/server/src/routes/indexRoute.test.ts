@@ -8,6 +8,7 @@ import { buildApp } from '../app.js';
 
 describe('GET /api/index', () => {
   const home = path.join(os.tmpdir(), `skillvault-index-route-${Date.now()}`);
+  const noDistPath = path.join(os.tmpdir(), `skillvault-no-dist-${Date.now()}`);
 
   afterEach(() => {
     fs.rmSync(home, { recursive: true, force: true });
@@ -16,7 +17,7 @@ describe('GET /api/index', () => {
   it('returns an empty array when no items have been added', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     const response = await app.inject({ method: 'GET', url: '/api/index' });
     expect(response.statusCode).toBe(200);
@@ -26,7 +27,7 @@ describe('GET /api/index', () => {
   it('returns the generated index after an item is added', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
-    const app = buildApp({ db: createDb(':memory:'), config });
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
 
     await app.inject({
       method: 'POST',

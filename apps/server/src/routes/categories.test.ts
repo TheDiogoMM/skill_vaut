@@ -8,6 +8,7 @@ import { buildApp } from '../app.js';
 
 describe('categories routes', () => {
   const home = path.join(os.tmpdir(), `skillvault-categories-routes-${Date.now()}`);
+  const noDistPath = path.join(os.tmpdir(), `skillvault-no-dist-${Date.now()}`);
 
   afterEach(() => {
     fs.rmSync(home, { recursive: true, force: true });
@@ -20,7 +21,7 @@ describe('categories routes', () => {
   }
 
   it('creates, lists, renames, and merges categories', async () => {
-    const app = buildApp({ db: createDb(':memory:'), config: makeConfig() });
+    const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
 
     const createA = await app.inject({
       method: 'POST',
@@ -59,7 +60,7 @@ describe('categories routes', () => {
   });
 
   it('returns 400 from PATCH when the body is missing a name', async () => {
-    const app = buildApp({ db: createDb(':memory:'), config: makeConfig() });
+    const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
 
     const create = await app.inject({
       method: 'POST',
@@ -77,7 +78,7 @@ describe('categories routes', () => {
   });
 
   it('returns 404 from merge when target_id does not refer to a real category', async () => {
-    const app = buildApp({ db: createDb(':memory:'), config: makeConfig() });
+    const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
 
     const create = await app.inject({
       method: 'POST',
@@ -95,7 +96,7 @@ describe('categories routes', () => {
   });
 
   it('returns 400 from merge when source and target ids are the same', async () => {
-    const app = buildApp({ db: createDb(':memory:'), config: makeConfig() });
+    const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
 
     const create = await app.inject({
       method: 'POST',
@@ -115,7 +116,7 @@ describe('categories routes', () => {
   it('regenerates index.json to reflect a category rename', async () => {
     const config = makeConfig();
     const db = createDb(':memory:');
-    const app = buildApp({ db, config });
+    const app = buildApp({ db, config, webDistPath: noDistPath });
 
     const create = await app.inject({
       method: 'POST',
@@ -149,7 +150,7 @@ describe('categories routes', () => {
   it('regenerates index.json to reflect a category merge', async () => {
     const config = makeConfig();
     const db = createDb(':memory:');
-    const app = buildApp({ db, config });
+    const app = buildApp({ db, config, webDistPath: noDistPath });
 
     const createA = await app.inject({
       method: 'POST',
