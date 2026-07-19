@@ -77,6 +77,11 @@ describe('api client', () => {
     await expect(getItem(999)).rejects.toThrow('item not found');
   });
 
+  it('falls back to a descriptive message when the error body has no usable error field', async () => {
+    mockFetchOnce({}, { ok: false, status: 500 });
+    await expect(getItem(999)).rejects.toThrow(/status 500/);
+  });
+
   it('listCategories and createCategory hit the categories endpoint', async () => {
     mockFetchOnce([{ id: 1, name: 'dev-tools', createdAt: '' }]);
     const categories = await listCategories();

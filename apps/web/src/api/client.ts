@@ -9,7 +9,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(errorBody.error ?? `Request failed with status ${response.status}`);
+    throw new Error(errorBody.error || `Request failed with status ${response.status}`);
   }
 
   if (response.status === 204) {
