@@ -3,6 +3,13 @@ import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { getItem, listCategories, updateItem } from '../api/client.js';
 import type { Category, ItemDetail } from '../types.js';
+import { Button } from '../components/ui/core/Button/Button.js';
+import { Icon } from '../components/ui/core/Icon/Icon.js';
+import { Select } from '../components/ui/forms/Select/Select.js';
+import { Input } from '../components/ui/forms/Input/Input.js';
+import { Tag } from '../components/ui/data-display/Tag/Tag.js';
+import { TypeBadge } from '../components/ui/data-display/TypeBadge/TypeBadge.js';
+import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 
 export function ItemDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,40 +70,103 @@ export function ItemDetailPage() {
   }
 
   if (status === 'loading') return <p>Carregando item...</p>;
-  if (status === 'error' || !item) return <p role="alert">Não foi possível carregar o item.</p>;
+  if (status === 'error' || !item) return <StatusMessage kind="error">Não foi possível carregar o item.</StatusMessage>;
+
+  const parsedTags = tagsInput
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 
   return (
-    <article>
-      <h2>{item.name}</h2>
-      <p>{item.summary}</p>
-      <p>{item.utility}</p>
-      <p>
-        <code>{item.localPath}</code>{' '}
-        <button type="button" onClick={handleCopy}>
-          {copied ? 'Copiado!' : 'Copiar caminho'}
-        </button>
-      </p>
+    <article style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', maxWidth: 760 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-display)',
+            fontWeight: 'var(--fw-display)',
+            color: 'var(--color-text)',
+          }}
+        >
+          {item.name}
+        </h2>
+        <TypeBadge type={item.type} />
+      </div>
+      <p style={{ margin: 0, fontSize: 15, color: 'var(--color-text-secondary)' }}>{item.summary}</p>
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-tertiary)' }}>{item.utility}</p>
 
-      <div>
-        <label htmlFor="item-category">Categoria</label>
-        <select id="item-category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <code
+          style={{
+            background: 'var(--color-bg-inset)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '6px 10px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 13,
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          {item.localPath}
+        </code>
+        <Button
+          variant="secondary"
+          size="sm"
+          iconLeft={<Icon name={copied ? 'check' : 'copy'} size={13} />}
+          onClick={handleCopy}
+        >
+          {copied ? 'Copiado!' : 'Copiar caminho'}
+        </Button>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: 16,
+          alignItems: 'flex-end',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Select
+          label="Categoria"
+          id="item-category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          style={{ width: 200 }}
+        >
           <option value="">Sem categoria</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
             </option>
           ))}
-        </select>
-
-        <label htmlFor="item-tags">Tags (separadas por vírgula)</label>
-        <input id="item-tags" type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} />
-
-        <button type="button" onClick={handleSave} disabled={saveStatus === 'saving'}>
+        </Select>
+        <Input
+          label="Tags (separadas por vírgula)"
+          id="item-tags"
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          style={{ width: 260 }}
+        />
+        <Button onClick={handleSave} disabled={saveStatus === 'saving'}>
           Salvar
-        </button>
-        {saveStatus === 'saved' && <span>Salvo!</span>}
-        {saveStatus === 'error' && <span role="alert">Erro ao salvar.</span>}
+        </Button>
+        {saveStatus === 'saved' && <StatusMessage kind="success">Salvo!</StatusMessage>}
+        {saveStatus === 'error' && <StatusMessage kind="error">Erro ao salvar.</StatusMessage>}
       </div>
+
+      {parsedTags.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {parsedTags.map((tag) => (
+            <Tag key={tag}>{tag}</Tag>
+          ))}
+        </div>
+      )}
 
       {item.type === 'mcp' ? <pre>{item.content}</pre> : <ReactMarkdown>{item.content}</ReactMarkdown>}
     </article>
