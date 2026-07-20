@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { createItem } from '../../api/client.js';
 import type { Item } from '../../types.js';
+import { Input } from '../../components/ui/forms/Input/Input.js';
+import { Button } from '../../components/ui/core/Button/Button.js';
+import { StatusMessage } from '../../components/ui/feedback/StatusMessage/StatusMessage.js';
 
 interface RepoFormProps {
   onCreated: (item: Item) => void;
@@ -28,17 +31,32 @@ export function RepoForm({ onCreated }: RepoFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="repo-name">Nome</label>
-      <input id="repo-name" value={name} onChange={(e) => setName(e.target.value)} required />
-
-      <label htmlFor="repo-url">URL do repositório</label>
-      <input id="repo-url" value={url} onChange={(e) => setUrl(e.target.value)} required />
-
-      <button type="submit" disabled={status === 'submitting'}>
-        Adicionar repositório
-      </button>
-      {status === 'error' && <p role="alert">{error}</p>}
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 18,
+      }}
+    >
+      <Input id="repo-name" label="Nome" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input
+        id="repo-url"
+        label="URL do repositório"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        required
+      />
+      <div>
+        <Button type="submit" disabled={status === 'submitting'}>
+          Adicionar repositório
+        </Button>
+      </div>
+      {status === 'error' && <StatusMessage kind="error">{error}</StatusMessage>}
     </form>
   );
 }
