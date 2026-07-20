@@ -39,9 +39,9 @@ export function Sidebar({ theme, onToggleTheme }: SidebarProps) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <img src={logoSymbol} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: 16, color: 'var(--color-text)' }}>
+          <h1 style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: 16, color: 'var(--color-text)' }}>
             SkillVault
-          </span>
+          </h1>
         </div>
         <Button variant="ghost" size="sm" onClick={onToggleTheme}>
           {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
