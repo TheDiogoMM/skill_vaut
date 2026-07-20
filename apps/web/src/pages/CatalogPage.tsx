@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { listItems, listCategories } from '../api/client.js';
 import { SearchFilterBar, type Filters } from '../components/SearchFilterBar.js';
 import { CategoryManager } from '../components/CategoryManager.js';
+import { ItemCard } from '../components/ui/data-display/ItemCard/ItemCard.js';
+import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 import type { Category, Item, ItemFilters } from '../types.js';
 
 interface GroupedItems {
@@ -68,32 +69,42 @@ export function CatalogPage() {
   const groups = groupByCategory(items, categories);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--font-sans)',
+          fontSize: 'var(--text-display)',
+          fontWeight: 'var(--fw-display)',
+          letterSpacing: 'var(--ls-display)',
+          color: 'var(--color-text)',
+        }}
+      >
+        Catálogo
+      </h1>
       <SearchFilterBar categories={categories} onChange={setFilters} />
       {status === 'loading' && <p>Carregando catálogo...</p>}
-      {status === 'error' && <p role="alert">Não foi possível carregar o catálogo.</p>}
+      {status === 'error' && <StatusMessage kind="error">Não foi possível carregar o catálogo.</StatusMessage>}
       {status === 'ready' && items.length === 0 && <p>Nenhum item cadastrado ainda.</p>}
       {status === 'ready' &&
         groups.map((group) => (
-          <section key={group.category}>
-            <h2>{group.category}</h2>
-            <ul>
+          <section key={group.category} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'var(--text-title)',
+                fontWeight: 'var(--fw-title)',
+                color: 'var(--color-text)',
+              }}
+            >
+              {group.category}
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
               {group.items.map((item) => (
-                <li key={item.id}>
-                  <Link to={`/items/${item.id}`}>{item.name}</Link> <span>({item.type})</span>
-                  <p>{item.summary}</p>
-                  <p>{item.utility}</p>
-                  <p>
-                    {item.tags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </p>
-                  <p>
-                    <code>{item.localPath}</code>
-                  </p>
-                </li>
+                <ItemCard key={item.id} item={item} />
               ))}
-            </ul>
+            </div>
           </section>
         ))}
       {status === 'ready' && <CategoryManager categories={categories} onChanged={refetchCategories} />}
