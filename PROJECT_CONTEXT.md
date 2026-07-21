@@ -69,7 +69,7 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 - Geração automática de `index.json`/`INDEX.md` a cada escrita (items **e** categorias).
 - `GET /api/items/:id` retorna também o **conteúdo bruto do arquivo** (README/SKILL.md/config) — campo `content`, adicionado especificamente para a tela de detalhe do frontend.
 - **Recomendador**: `POST /api/recommend` (anti-alucinação por id, fallback Ollama → Gemini, sem fallback manual) e `GET /api/consultas` (últimas 10) — ver `docs/superpowers/specs/2026-07-20-recommender-design.md`.
-- 89 testes passando.
+- 90 testes passando.
 
 ### Frontend (`apps/web`) — completo (exceto PWA)
 - **Catálogo** (`/`): lista agrupada por categoria, cards com nome, tipo, resumo, utilidade, tags, caminho local. Busca + filtros por tipo/categoria/tag (debounce de 250ms).

@@ -71,6 +71,25 @@ describe('getRecommendations', () => {
     expect(result?.mcps).toEqual([]);
   });
 
+  it('deduplicates repeated ids cited by the LLM within the same block', async () => {
+    const skill = itemsRepo.create(baseNewItem({ type: 'skill', name: 'PDF Parser' }));
+
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const raw = JSON.stringify({
+      skills: [
+        { id: skill.id, motivo: 'primeira menção' },
+        { id: skill.id, motivo: 'segunda menção, deveria ser descartada' },
+      ],
+      repos: [],
+      mcps: [],
+    });
+    const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
+
+    const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
+
+    expect(result?.skills).toEqual([{ ...skill, motivo: 'primeira menção' }]);
+  });
+
   it('falls back to Gemini when Ollama fails', async () => {
     const skill = itemsRepo.create(baseNewItem());
     const config = loadConfig({ GEMINI_API_KEY: 'key' } as NodeJS.ProcessEnv);

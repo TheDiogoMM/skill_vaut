@@ -25,9 +25,12 @@ function resolveList(
   itemsRepo: ItemsRepository
 ): RecommendedItem[] {
   const resolved: RecommendedItem[] = [];
+  const seenIds = new Set<number>();
   for (const entry of entries) {
+    if (seenIds.has(entry.id)) continue;
     const item = itemsRepo.getById(entry.id);
     if (!item || item.type !== expectedType) continue;
+    seenIds.add(entry.id);
     resolved.push({ ...item, motivo: entry.motivo });
   }
   return resolved;
