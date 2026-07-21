@@ -1,4 +1,4 @@
-import type { Category, Item, ItemDetail, ItemFilters, ItemUpdate } from '../types.js';
+import type { Category, Item, ItemDetail, ItemFilters, ItemUpdate, RecommendResult, Consulta } from '../types.js';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const isJsonBody = typeof init?.body === 'string';
@@ -100,4 +100,15 @@ export function mergeCategory(sourceId: number, targetId: number): Promise<void>
     method: 'POST',
     body: JSON.stringify({ target_id: targetId }),
   });
+}
+
+export function getRecommendations(ideia: string): Promise<RecommendResult> {
+  return request<RecommendResult>('/api/recommend', {
+    method: 'POST',
+    body: JSON.stringify({ ideia }),
+  });
+}
+
+export function listConsultas(): Promise<Consulta[]> {
+  return request<Consulta[]>('/api/consultas');
 }

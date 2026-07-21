@@ -9,6 +9,8 @@ import {
   createCategory,
   renameCategory,
   mergeCategory,
+  getRecommendations,
+  listConsultas,
 } from './client.js';
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
@@ -109,5 +111,21 @@ describe('api client', () => {
     const [url, init] = mock.mock.calls[0];
     expect(url).toBe('/api/categories/1/merge');
     expect(JSON.parse(init.body)).toEqual({ target_id: 2 });
+  });
+
+  it('getRecommendations posts the idea and returns the parsed result', async () => {
+    const mock = mockFetchOnce({ skills: [], repos: [], mcps: [] });
+    const result = await getRecommendations('app de leitura de PDFs');
+    const [url, init] = mock.mock.calls[0];
+    expect(url).toBe('/api/recommend');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ ideia: 'app de leitura de PDFs' });
+    expect(result).toEqual({ skills: [], repos: [], mcps: [] });
+  });
+
+  it('listConsultas fetches the recent query history', async () => {
+    mockFetchOnce([{ id: 1, ideia: 'x', createdAt: '' }]);
+    const consultas = await listConsultas();
+    expect(consultas).toHaveLength(1);
   });
 });
