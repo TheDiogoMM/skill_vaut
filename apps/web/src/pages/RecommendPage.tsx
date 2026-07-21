@@ -78,6 +78,8 @@ export function RecommendPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setStatus('submitting');
+    setError('');
+    setResult(null);
     try {
       const data = await getRecommendations(ideia);
       setResult(data);

@@ -79,7 +79,7 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 - **Tema**: dark mode padrão, toggle persistido em localStorage, layout desktop-first (sidebar fixa, colapsa abaixo de 720px).
 - **Identidade visual**: design system aplicado (tokens de cor/tipografia/espaçamento, Inter + JetBrains Mono via `@fontsource`, ícones via `lucide-react`, biblioteca de componentes em `apps/web/src/components/ui/`) — ver `docs/superpowers/specs/2026-07-19-frontend-design-system-design.md`.
 - **Recomendar** (`/recommend`): campo de texto livre com a ideia do projeto, botão de envio, 3 colunas de resultado (skills/repos/MCPs) com motivo gerado pela LLM, e histórico das últimas consultas.
-- 87 testes passando.
+- 88 testes passando.
 
 ### Bugs reais encontrados e corrigidos durante o desenvolvimento (revisão por subagentes)
 - Backend: injeção via argumento de URL no `git clone`, upload multipart quebrado (bug crítico, corrigido), path traversal em nome de arquivo de upload, categorias não regeneravam o índice (gap contra a spec).

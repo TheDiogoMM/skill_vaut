@@ -76,6 +76,40 @@ describe('RecommendPage', () => {
     );
   });
 
+  it('clears a previous error once a later submission succeeds', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    const getRecommendations = vi.spyOn(api, 'getRecommendations');
+    getRecommendations.mockRejectedValueOnce(
+      new Error('Não foi possível gerar recomendações no momento. Tente novamente.')
+    );
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    const textarea = screen.getByLabelText('Ideia do projeto');
+    const submit = screen.getByRole('button', { name: 'Recomendar' });
+
+    await user.type(textarea, 'app de leitura de PDFs');
+    await user.click(submit);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível gerar recomendações no momento. Tente novamente.'
+    );
+
+    getRecommendations.mockResolvedValueOnce({
+      skills: [{ ...sampleItem(), motivo: 'Ajuda a extrair texto de PDFs' }],
+      repos: [],
+      mcps: [],
+    });
+    await user.click(submit);
+
+    expect(await screen.findByRole('link', { name: 'PDF Parser' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('renders the query history', async () => {
     vi.spyOn(api, 'listConsultas').mockResolvedValue([
       { id: 1, ideia: 'app de leitura de PDFs', createdAt: '2026-07-20T10:00:00.000Z' },
