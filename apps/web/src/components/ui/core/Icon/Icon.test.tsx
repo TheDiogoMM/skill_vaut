@@ -19,4 +19,9 @@ describe('Icon', () => {
     const { container } = render(<Icon name="library" />);
     expect(container.querySelector('svg')).toHaveAttribute('width', '16');
   });
+
+  it('renders the wand-2 icon', () => {
+    const { container } = render(<Icon name="wand-2" />);
+    expect(container.querySelector('svg')).toBeInTheDocument();
+  });
 });

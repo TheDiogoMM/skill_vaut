@@ -1,5 +1,5 @@
 import type { SVGProps } from 'react';
-import { Sparkles, GitBranch, Plug, CheckCircle2, AlertCircle, Info, Copy, Check, Library, PlusCircle, Sun, Moon } from 'lucide-react';
+import { Sparkles, GitBranch, Plug, CheckCircle2, AlertCircle, Info, Copy, Check, Library, PlusCircle, Sun, Moon, Wand2 } from 'lucide-react';
 
 const ICONS = {
   sparkles: Sparkles,
@@ -14,6 +14,7 @@ const ICONS = {
   'plus-circle': PlusCircle,
   sun: Sun,
   moon: Moon,
+  'wand-2': Wand2,
 } as const;
 
 export type IconName = keyof typeof ICONS;
