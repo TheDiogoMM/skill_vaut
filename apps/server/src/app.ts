@@ -9,6 +9,7 @@ import type { SkillVaultConfig } from './config.js';
 import { categoriesRoutes } from './routes/categories.js';
 import { itemsRoutes } from './routes/items.js';
 import { indexRoute } from './routes/indexRoute.js';
+import { recommendRoutes } from './routes/recommend.js';
 
 const defaultWebDistPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -30,6 +31,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.register(categoriesRoutes(options.config));
   app.register(itemsRoutes(options.config));
   app.register(indexRoute(options.config));
+  app.register(recommendRoutes(options.config));
 
   const webDistPath = options.webDistPath ?? defaultWebDistPath;
   const indexHtmlPath = path.join(webDistPath, 'index.html');
