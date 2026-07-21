@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { mergeCategory, renameCategory } from '../api/client.js';
 import type { Category } from '../types.js';
+import { Input } from './ui/forms/Input/Input.js';
+import { Select } from './ui/forms/Select/Select.js';
+import { Button } from './ui/core/Button/Button.js';
+import { StatusMessage } from './ui/feedback/StatusMessage/StatusMessage.js';
 
 interface CategoryManagerProps {
   categories: Category[];
@@ -44,62 +48,82 @@ export function CategoryManager({ categories, onChanged }: CategoryManagerProps)
   }
 
   return (
-    <section>
-      <h3>Categorias</h3>
-      <ul>
+    <section
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        fontFamily: 'var(--font-sans)',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 16,
+      }}
+    >
+      <h3 style={{ margin: 0, fontSize: 14, color: 'var(--color-text)' }}>Categorias</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {categories.map((category) => (
-          <li key={category.id}>
+          <div key={category.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {renamingId === category.id ? (
               <>
-                <label htmlFor={`rename-${category.id}`}>Novo nome</label>
-                <input
+                <Input
+                  label="Novo nome"
                   id={`rename-${category.id}`}
                   value={renameValue}
                   onChange={(e) => setRenameValue(e.target.value)}
+                  style={{ width: 200 }}
                 />
-                <button type="button" onClick={() => submitRename(category.id)}>
+                <Button size="sm" onClick={() => submitRename(category.id)}>
                   Salvar
-                </button>
+                </Button>
               </>
             ) : (
               <>
-                {category.name}{' '}
-                <button type="button" onClick={() => startRename(category)}>
+                <span style={{ fontSize: 14, color: 'var(--color-text)', width: 200 }}>{category.name}</span>
+                <Button size="sm" variant="ghost" onClick={() => startRename(category)}>
                   Renomear
-                </button>
+                </Button>
               </>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <div>
-        <label htmlFor="merge-source">Mesclar categoria</label>
-        <select id="merge-source" value={mergeSourceId} onChange={(e) => setMergeSourceId(e.target.value)}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <Select
+          label="Mesclar categoria"
+          id="merge-source"
+          value={mergeSourceId}
+          onChange={(e) => setMergeSourceId(e.target.value)}
+          style={{ width: 170 }}
+        >
           <option value="">Selecione a origem</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
             </option>
           ))}
-        </select>
-
-        <label htmlFor="merge-target">Em</label>
-        <select id="merge-target" value={mergeTargetId} onChange={(e) => setMergeTargetId(e.target.value)}>
+        </Select>
+        <Select
+          label="Em"
+          id="merge-target"
+          value={mergeTargetId}
+          onChange={(e) => setMergeTargetId(e.target.value)}
+          style={{ width: 170 }}
+        >
           <option value="">Selecione o destino</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
             </option>
           ))}
-        </select>
-
-        <button type="button" onClick={submitMerge}>
+        </Select>
+        <Button variant="secondary" onClick={submitMerge}>
           Mesclar
-        </button>
+        </Button>
       </div>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <StatusMessage kind="error">{error}</StatusMessage>}
     </section>
   );
 }
