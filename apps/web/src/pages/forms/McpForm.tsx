@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { createItem } from '../../api/client.js';
 import type { Item } from '../../types.js';
+import { Input } from '../../components/ui/forms/Input/Input.js';
+import { Textarea } from '../../components/ui/forms/Textarea/Textarea.js';
+import { Button } from '../../components/ui/core/Button/Button.js';
+import { StatusMessage } from '../../components/ui/feedback/StatusMessage/StatusMessage.js';
 
 interface McpFormProps {
   onCreated: (item: Item) => void;
@@ -39,20 +43,39 @@ export function McpForm({ onCreated }: McpFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="mcp-name">Nome</label>
-      <input id="mcp-name" value={name} onChange={(e) => setName(e.target.value)} required />
-
-      <label htmlFor="mcp-description">Descrição (opcional)</label>
-      <input id="mcp-description" value={description} onChange={(e) => setDescription(e.target.value)} />
-
-      <label htmlFor="mcp-config">Config JSON (ex: bloco mcpServers)</label>
-      <textarea id="mcp-config" value={configText} onChange={(e) => setConfigText(e.target.value)} required />
-
-      <button type="submit" disabled={status === 'submitting'}>
-        Adicionar MCP
-      </button>
-      {status === 'error' && <p role="alert">{error}</p>}
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 18,
+      }}
+    >
+      <Input id="mcp-name" label="Nome" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input
+        id="mcp-description"
+        label="Descrição (opcional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <Textarea
+        id="mcp-config"
+        label="Config JSON (ex: bloco mcpServers)"
+        mono
+        value={configText}
+        onChange={(e) => setConfigText(e.target.value)}
+        required
+      />
+      <div>
+        <Button type="submit" disabled={status === 'submitting'}>
+          Adicionar MCP
+        </Button>
+      </div>
+      {status === 'error' && <StatusMessage kind="error">{error}</StatusMessage>}
     </form>
   );
 }
