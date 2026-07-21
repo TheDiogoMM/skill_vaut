@@ -43,3 +43,19 @@ export interface ItemUpdate {
   utility?: string | null;
   tags?: string[];
 }
+
+export interface RecommendedItem extends Item {
+  motivo: string;
+}
+
+export interface RecommendResult {
+  skills: RecommendedItem[];
+  repos: RecommendedItem[];
+  mcps: RecommendedItem[];
+}
+
+export interface Consulta {
+  id: number;
+  ideia: string;
+  createdAt: string;
+}
