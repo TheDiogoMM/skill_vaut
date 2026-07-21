@@ -13,6 +13,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Catálogo', icon: 'library', end: true },
   { to: '/add', label: 'Adicionar', icon: 'plus-circle' },
+  { to: '/recommend', label: 'Recomendar', icon: 'wand-2' },
 ];
 
 export interface SidebarProps {

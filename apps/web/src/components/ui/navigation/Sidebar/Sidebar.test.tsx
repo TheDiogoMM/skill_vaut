@@ -35,4 +35,13 @@ describe('Sidebar', () => {
     );
     expect(screen.getByRole('button', { name: 'Modo escuro' })).toBeInTheDocument();
   });
+
+  it('renders a navigation link to the recommend route', () => {
+    render(
+      <MemoryRouter>
+        <Sidebar theme="dark" onToggleTheme={vi.fn()} />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('link', { name: 'Recomendar' })).toHaveAttribute('href', '/recommend');
+  });
 });
