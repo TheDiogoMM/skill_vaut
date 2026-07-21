@@ -68,16 +68,18 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 - API REST completa: `POST/GET/PATCH/DELETE /api/items`, `GET/POST/PATCH /api/categories`, `POST /api/categories/:id/merge`, `GET /api/index`.
 - Geração automática de `index.json`/`INDEX.md` a cada escrita (items **e** categorias).
 - `GET /api/items/:id` retorna também o **conteúdo bruto do arquivo** (README/SKILL.md/config) — campo `content`, adicionado especificamente para a tela de detalhe do frontend.
-- 66 testes passando.
+- **Recomendador**: `POST /api/recommend` (anti-alucinação por id, fallback Ollama → Gemini, sem fallback manual) e `GET /api/consultas` (últimas 10) — ver `docs/superpowers/specs/2026-07-20-recommender-design.md`.
+- 89 testes passando.
 
-### Frontend (`apps/web`) — completo (exceto recomendador e PWA)
+### Frontend (`apps/web`) — completo (exceto PWA)
 - **Catálogo** (`/`): lista agrupada por categoria, cards com nome, tipo, resumo, utilidade, tags, caminho local. Busca + filtros por tipo/categoria/tag (debounce de 250ms).
 - **Detalhe do item** (`/items/:id`): conteúdo renderizado (Markdown para repo/skill, JSON bruto para MCP), botão "copiar caminho", categoria e tags **editáveis inline**.
 - **Adicionar** (`/add`): seletor de tipo → formulário de repo (URL), skill (3 abas: caminho local/upload/URL), MCP (nome + config JSON). Após criar, redireciona para a tela de detalhe do item novo (onde o usuário vê e pode ajustar os campos gerados pela LLM — essa foi a interpretação escolhida para o requisito original de "preview do enriquecimento antes de confirmar", evitando redesenhar o backend em duas fases).
 - **Categorias**: renomear e mesclar, acessível a partir do catálogo.
 - **Tema**: dark mode padrão, toggle persistido em localStorage, layout desktop-first (sidebar fixa, colapsa abaixo de 720px).
 - **Identidade visual**: design system aplicado (tokens de cor/tipografia/espaçamento, Inter + JetBrains Mono via `@fontsource`, ícones via `lucide-react`, biblioteca de componentes em `apps/web/src/components/ui/`) — ver `docs/superpowers/specs/2026-07-19-frontend-design-system-design.md`.
-- 80 testes passando.
+- **Recomendar** (`/recommend`): campo de texto livre com a ideia do projeto, botão de envio, 3 colunas de resultado (skills/repos/MCPs) com motivo gerado pela LLM, e histórico das últimas consultas.
+- 87 testes passando.
 
 ### Bugs reais encontrados e corrigidos durante o desenvolvimento (revisão por subagentes)
 - Backend: injeção via argumento de URL no `git clone`, upload multipart quebrado (bug crítico, corrigido), path traversal em nome de arquivo de upload, categorias não regeneravam o índice (gap contra a spec).
@@ -87,9 +89,8 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 
 Do escopo original, ainda **não implementado**:
 
-1. **Recomendador de projeto** (`/recommend` + `POST /api/recommend`): campo de texto livre → LLM cruza com o catálogo → retorna skills/repos/MCPs recomendados em 3 blocos, com anti-alucinação (nunca inventa item que não existe no catálogo) e histórico de consultas (tabela `consultas`, já existe no schema mas não é usada ainda).
-2. **PWA**: `vite-plugin-pwa`, manifest (ícones, nome, theme_color), service worker para cache do app shell + última resposta de `GET /api/items` (visualização offline do catálogo).
-3. Nada além disso do escopo original ficou pendente — essas são as duas únicas peças que faltam para o app estar 100% conforme o pedido inicial.
+1. **PWA**: `vite-plugin-pwa`, manifest (ícones, nome, theme_color), service worker para cache do app shell + última resposta de `GET /api/items` (visualização offline do catálogo).
+2. Nada além disso do escopo original ficou pendente — essa é a única peça que falta para o app estar 100% conforme o pedido inicial.
 
 ## Como rodar localmente
 
