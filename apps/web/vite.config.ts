@@ -26,7 +26,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg}'],
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname === '/api/items',
+            // CatalogPage renders from GET /api/items and GET /api/categories together
+            // (it groups items by category name) — both must be cached for the offline
+            // catalog view to actually render, not just the items list on its own.
+            urlPattern: ({ url }) => url.pathname === '/api/items' || url.pathname === '/api/categories',
             method: 'GET',
             handler: 'NetworkFirst',
             options: {
