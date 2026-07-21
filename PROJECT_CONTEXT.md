@@ -76,7 +76,8 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 - **Adicionar** (`/add`): seletor de tipo → formulário de repo (URL), skill (3 abas: caminho local/upload/URL), MCP (nome + config JSON). Após criar, redireciona para a tela de detalhe do item novo (onde o usuário vê e pode ajustar os campos gerados pela LLM — essa foi a interpretação escolhida para o requisito original de "preview do enriquecimento antes de confirmar", evitando redesenhar o backend em duas fases).
 - **Categorias**: renomear e mesclar, acessível a partir do catálogo.
 - **Tema**: dark mode padrão, toggle persistido em localStorage, layout desktop-first (sidebar fixa, colapsa abaixo de 720px).
-- 44 testes passando.
+- **Identidade visual**: design system aplicado (tokens de cor/tipografia/espaçamento, Inter + JetBrains Mono via `@fontsource`, ícones via `lucide-react`, biblioteca de componentes em `apps/web/src/components/ui/`) — ver `docs/superpowers/specs/2026-07-19-frontend-design-system-design.md`.
+- 80 testes passando.
 
 ### Bugs reais encontrados e corrigidos durante o desenvolvimento (revisão por subagentes)
 - Backend: injeção via argumento de URL no `git clone`, upload multipart quebrado (bug crítico, corrigido), path traversal em nome de arquivo de upload, categorias não regeneravam o índice (gap contra a spec).
