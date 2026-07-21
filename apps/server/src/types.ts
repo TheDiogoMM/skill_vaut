@@ -33,3 +33,19 @@ export interface EnrichmentResult {
   tags: string[];
   source: EnrichmentSource;
 }
+
+export interface Consulta {
+  id: number;
+  ideia: string;
+  createdAt: string;
+}
+
+export interface RecommendedItem extends Item {
+  motivo: string;
+}
+
+export interface RecommendResult {
+  skills: RecommendedItem[];
+  repos: RecommendedItem[];
+  mcps: RecommendedItem[];
+}
