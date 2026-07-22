@@ -16,6 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'SkillVault',
         short_name: 'SkillVault',
+        lang: 'pt-BR',
         display: 'standalone',
         start_url: '/',
         background_color: '#0f1115',
