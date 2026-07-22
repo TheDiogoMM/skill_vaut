@@ -8,7 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // Registration is done by hand in main.tsx (register + explicit update() call + a
+      // controllerchange listener that reloads once the new worker takes over) — the
+      // plugin's own injected register script doesn't check for updates proactively,
+      // so a plain page reload after a rebuild isn't guaranteed to pick up the new build.
+      injectRegister: false,
       manifest: {
         name: 'SkillVault',
         short_name: 'SkillVault',
