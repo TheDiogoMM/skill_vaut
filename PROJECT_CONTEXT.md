@@ -71,7 +71,7 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 - **Recomendador**: `POST /api/recommend` (anti-alucinação por id, fallback Ollama → Gemini, sem fallback manual) e `GET /api/consultas` (últimas 10) — ver `docs/superpowers/specs/2026-07-20-recommender-design.md`.
 - 90 testes passando.
 
-### Frontend (`apps/web`) — completo (exceto PWA)
+### Frontend (`apps/web`) — completo
 - **Catálogo** (`/`): lista agrupada por categoria, cards com nome, tipo, resumo, utilidade, tags, caminho local. Busca + filtros por tipo/categoria/tag (debounce de 250ms).
 - **Detalhe do item** (`/items/:id`): conteúdo renderizado (Markdown para repo/skill, JSON bruto para MCP), botão "copiar caminho", categoria e tags **editáveis inline**.
 - **Adicionar** (`/add`): seletor de tipo → formulário de repo (URL), skill (3 abas: caminho local/upload/URL), MCP (nome + config JSON). Após criar, redireciona para a tela de detalhe do item novo (onde o usuário vê e pode ajustar os campos gerados pela LLM — essa foi a interpretação escolhida para o requisito original de "preview do enriquecimento antes de confirmar", evitando redesenhar o backend em duas fases).
@@ -79,18 +79,17 @@ C:\Users\Diogo\skillvault\               # dados (FORA do repo git)
 - **Tema**: dark mode padrão, toggle persistido em localStorage, layout desktop-first (sidebar fixa, colapsa abaixo de 720px).
 - **Identidade visual**: design system aplicado (tokens de cor/tipografia/espaçamento, Inter + JetBrains Mono via `@fontsource`, ícones via `lucide-react`, biblioteca de componentes em `apps/web/src/components/ui/`) — ver `docs/superpowers/specs/2026-07-19-frontend-design-system-design.md`.
 - **Recomendar** (`/recommend`): campo de texto livre com a ideia do projeto, botão de envio, 3 colunas de resultado (skills/repos/MCPs) com motivo gerado pela LLM, e histórico das últimas consultas.
+- **PWA**: instalável (manifest + ícones gerados a partir do logo, fundo escuro `#0f1115` com respiro), service worker (`vite-plugin-pwa`) com atualização automática de verdade (registro manual em `main.tsx` que envia `SKIP_WAITING` e recarrega no `controllerchange` — o registro injetado pelo plugin sozinho não fazia isso), catálogo (`GET /api/items` + `GET /api/categories`, as duas — a página depende das duas) disponível offline via cache `NetworkFirst` — ver `docs/superpowers/specs/2026-07-21-pwa-design.md`.
 - 88 testes passando.
 
 ### Bugs reais encontrados e corrigidos durante o desenvolvimento (revisão por subagentes)
 - Backend: injeção via argumento de URL no `git clone`, upload multipart quebrado (bug crítico, corrigido), path traversal em nome de arquivo de upload, categorias não regeneravam o índice (gap contra a spec).
 - Frontend: gap de infraestrutura de testes (RTL não limpava o DOM entre testes — corrigido globalmente em `apps/web/src/test/setup.ts`), estado `saveStatus` vazando entre navegação de itens diferentes, inconsistência de validação (`required` faltando), cards do catálogo não mostravam utilidade/tags/caminho (gap contra a spec, corrigido).
+- PWA (achados via teste real com Playwright, não só leitura de código — ver "Convenções de trabalho"): cache offline configurado só para `GET /api/items` fazia a tela de catálogo inteira falhar offline, porque `CatalogPage` também depende de `GET /api/categories` no mesmo `Promise.all` (corrigido: as duas rotas agora são cacheadas); e a "atualização automática" do service worker não atualizava nada de verdade — o worker novo instalava mas ficava parado em `waiting` porque `self.skipWaiting()` só roda ao receber uma mensagem `SKIP_WAITING`, que o registro injetado pelo plugin (`injectRegister: 'auto'`) nunca envia (corrigido com registro manual em `main.tsx`).
 
 ## O que falta (próximos passos)
 
-Do escopo original, ainda **não implementado**:
-
-1. **PWA**: `vite-plugin-pwa`, manifest (ícones, nome, theme_color), service worker para cache do app shell + última resposta de `GET /api/items` (visualização offline do catálogo).
-2. Nada além disso do escopo original ficou pendente — essa é a única peça que falta para o app estar 100% conforme o pedido inicial.
+Nada — todas as funcionalidades pedidas originalmente (ingestão, compreensão automática, armazenamento, categorização, interface, recomendador, integração com Claude Code, PWA) estão implementadas.
 
 ## Como rodar localmente
 
