@@ -27,6 +27,13 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // vite-plugin-pwa only sets these two automatically when injectRegister is 'auto'
+        // (the default). Since registration is hand-rolled in main.tsx instead
+        // (injectRegister: false, above), they need to be set explicitly here — without
+        // clientsClaim, a newly activated worker never takes control of an already-open
+        // tab, so the controllerchange listener in main.tsx would never fire.
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg}'],
         runtimeCaching: [
           {
