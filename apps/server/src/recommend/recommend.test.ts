@@ -23,6 +23,7 @@ function baseNewItem(overrides: Partial<NewItem> = {}): NewItem {
     tags: ['pdf'],
     enrichmentSource: null,
     globalInstallStatus: null,
+    downloadStatus: null,
     ...overrides,
   };
 }

@@ -38,6 +38,7 @@ function baseItem(overrides: Partial<Item> = {}): Item {
     tags: [],
     enrichmentSource: null,
     globalInstallStatus: null,
+    downloadStatus: null,
     createdAt: '2026-01-01',
     updatedAt: '2026-01-01',
     ...overrides,
