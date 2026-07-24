@@ -55,4 +55,13 @@ describe('ItemCard', () => {
     );
     expect(screen.getByText('MCP')).toBeInTheDocument();
   });
+
+  it('shows the download action for a repo pending download', () => {
+    render(
+      <MemoryRouter>
+        <ItemCard item={sampleItem({ downloadStatus: 'not_downloaded' })} />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('button', { name: 'Baixar' })).toBeInTheDocument();
+  });
 });

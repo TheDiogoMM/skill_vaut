@@ -44,6 +44,10 @@ export function CatalogPage() {
     setRefreshToken((token) => token + 1);
   }, []);
 
+  const handleItemUpdated = useCallback((updated: Item) => {
+    setItems((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
@@ -102,7 +106,7 @@ export function CatalogPage() {
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
               {group.items.map((item) => (
-                <ItemCard key={item.id} item={item} />
+                <ItemCard key={item.id} item={item} onUpdated={handleItemUpdated} />
               ))}
             </div>
           </section>

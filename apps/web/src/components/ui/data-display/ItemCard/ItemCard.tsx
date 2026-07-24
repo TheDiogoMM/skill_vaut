@@ -2,12 +2,14 @@ import { Link } from 'react-router-dom';
 import type { Item } from '../../../../types.js';
 import { TypeBadge } from '../TypeBadge/TypeBadge.js';
 import { Tag } from '../Tag/Tag.js';
+import { RepoDownloadAction } from '../RepoDownloadAction/RepoDownloadAction.js';
 
 export interface ItemCardProps {
   item: Item;
+  onUpdated?: (item: Item) => void;
 }
 
-export function ItemCard({ item }: ItemCardProps) {
+export function ItemCard({ item, onUpdated }: ItemCardProps) {
   return (
     <div
       style={{
@@ -53,6 +55,7 @@ export function ItemCard({ item }: ItemCardProps) {
           {item.localPath}
         </code>
       )}
+      <RepoDownloadAction item={item} onUpdated={onUpdated} />
     </div>
   );
 }
