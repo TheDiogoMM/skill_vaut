@@ -16,6 +16,7 @@ function sampleItem(overrides: Partial<NewItem> = {}): NewItem {
     tags: ['exemplo', 'dev-tools'],
     enrichmentSource: 'ollama',
     globalInstallStatus: null,
+    downloadStatus: 'not_downloaded',
     ...overrides,
   };
 }
@@ -57,5 +58,18 @@ describe('ItemsRepository', () => {
     const created = repo.create(sampleItem());
     repo.delete(created.id);
     expect(repo.getById(created.id)).toBeUndefined();
+  });
+});
+
+describe('ItemsRepository.markDownloaded', () => {
+  it('flips download_status from not_downloaded to downloaded', () => {
+    const db = createDb(':memory:');
+    const repo = new ItemsRepository(db);
+    const created = repo.create(sampleItem({ downloadStatus: 'not_downloaded' }));
+
+    const updated = repo.markDownloaded(created.id);
+
+    expect(updated.downloadStatus).toBe('downloaded');
+    expect(new Date(updated.updatedAt).getTime()).toBeGreaterThanOrEqual(new Date(created.updatedAt).getTime());
   });
 });

@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import type { Item, ItemType, SourceType, EnrichmentSource, GlobalInstallStatus } from '../../types.js';
+import type { Item, ItemType, SourceType, EnrichmentSource, GlobalInstallStatus, DownloadStatus } from '../../types.js';
 
 interface ItemRow {
   id: number;
@@ -14,6 +14,7 @@ interface ItemRow {
   tags: string;
   enrichment_source: EnrichmentSource | null;
   global_install_status: GlobalInstallStatus | null;
+  download_status: DownloadStatus | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +31,7 @@ export interface NewItem {
   tags: string[];
   enrichmentSource: EnrichmentSource | null;
   globalInstallStatus: GlobalInstallStatus | null;
+  downloadStatus: DownloadStatus | null;
 }
 
 export interface ItemUpdate {
@@ -60,6 +62,7 @@ function toItem(row: ItemRow): Item {
     tags: JSON.parse(row.tags) as string[],
     enrichmentSource: row.enrichment_source,
     globalInstallStatus: row.global_install_status,
+    downloadStatus: row.download_status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -74,10 +77,10 @@ export class ItemsRepository {
       .prepare(
         `INSERT INTO items (
           type, name, source_type, source_value, local_path, category_id,
-          summary, utility, tags, enrichment_source, global_install_status,
+          summary, utility, tags, enrichment_source, global_install_status, download_status,
           created_at, updated_at
         ) VALUES (@type, @name, @sourceType, @sourceValue, @localPath, @categoryId,
-          @summary, @utility, @tags, @enrichmentSource, @globalInstallStatus,
+          @summary, @utility, @tags, @enrichmentSource, @globalInstallStatus, @downloadStatus,
           @createdAt, @updatedAt)`
       )
       .run({
@@ -92,6 +95,7 @@ export class ItemsRepository {
         tags: JSON.stringify(input.tags),
         enrichmentSource: input.enrichmentSource,
         globalInstallStatus: input.globalInstallStatus,
+        downloadStatus: input.downloadStatus,
         createdAt: now,
         updatedAt: now,
       });
@@ -154,6 +158,13 @@ export class ItemsRepository {
         updatedAt: new Date().toISOString(),
       });
     return this.getById(id);
+  }
+
+  markDownloaded(id: number): Item {
+    this.db
+      .prepare(`UPDATE items SET download_status = 'downloaded', updated_at = @updatedAt WHERE id = @id`)
+      .run({ id, updatedAt: new Date().toISOString() });
+    return this.getById(id)!;
   }
 
   delete(id: number): void {
