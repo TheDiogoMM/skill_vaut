@@ -6,6 +6,22 @@ import { resolveUniqueFile } from '../slug.js';
 import { enrichContent } from '../enrichment/enrich.js';
 import type { Item } from '../types.js';
 
+const SENSITIVE_KEY_PATTERN = /key|token|secret|password|authorization|bearer/i;
+
+export function redactSecrets(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactSecrets);
+  }
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      result[key] = SENSITIVE_KEY_PATTERN.test(key) ? '<REDACTED>' : redactSecrets(val);
+    }
+    return result;
+  }
+  return value;
+}
+
 export interface IngestMcpInput {
   name: string;
   config: Record<string, unknown>;
@@ -19,10 +35,11 @@ export async function ingestMcp(
   input: IngestMcpInput,
   enrich: typeof enrichContent = enrichContent
 ): Promise<Item> {
+  const redactedConfig = redactSecrets(input.config) as Record<string, unknown>;
   const { fullPath } = resolveUniqueFile(config.mcpsDir, input.name, '.json');
-  fs.writeFileSync(fullPath, JSON.stringify(input.config, null, 2), 'utf-8');
+  fs.writeFileSync(fullPath, JSON.stringify(redactedConfig, null, 2), 'utf-8');
 
-  const content = `${input.description ?? ''}\n${JSON.stringify(input.config, null, 2)}`;
+  const content = `${input.description ?? ''}\n${JSON.stringify(redactedConfig, null, 2)}`;
   const enrichment = await enrich(config, 'mcp', content);
   const category = enrichment.category ? categoriesRepo.findOrCreate(enrichment.category) : null;
 
@@ -30,7 +47,7 @@ export async function ingestMcp(
     type: 'mcp',
     name: input.name,
     sourceType: 'manual',
-    sourceValue: JSON.stringify(input.config),
+    sourceValue: JSON.stringify(redactedConfig),
     localPath: fullPath,
     categoryId: category ? category.id : null,
     summary: enrichment.summary || null,
@@ -38,6 +55,7 @@ export async function ingestMcp(
     tags: enrichment.tags,
     enrichmentSource: enrichment.source,
     globalInstallStatus: null,
+    downloadStatus: null,
   };
 
   return itemsRepo.create(newItem);
