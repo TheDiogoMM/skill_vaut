@@ -83,6 +83,27 @@ describe('redactSecrets', () => {
     const result = redactSecrets({ type: 'http', url: 'https://mcp.supabase.com/mcp?project_ref=abc' });
     expect(result).toEqual({ type: 'http', url: 'https://mcp.supabase.com/mcp?project_ref=abc' });
   });
+
+  it('redacts a sensitive-looking query parameter embedded in a URL value, even under a non-sensitive key', () => {
+    const result = redactSecrets({
+      type: 'http',
+      url: 'https://mcp.21st.dev/api?apiKey=an_sk_cfbdd997eedd180a951429f6febe42afa39565d25bb352fac9aca2519eee8622',
+    });
+    expect(result).toEqual({
+      type: 'http',
+      url: 'https://mcp.21st.dev/api?apiKey=%3CREDACTED%3E',
+    });
+  });
+
+  it('leaves URL values with no sensitive query parameters untouched', () => {
+    const result = redactSecrets({ url: 'https://mcp.supabase.com/mcp?project_ref=belbkhugpcfiiloqvrnd' });
+    expect(result).toEqual({ url: 'https://mcp.supabase.com/mcp?project_ref=belbkhugpcfiiloqvrnd' });
+  });
+
+  it('leaves non-URL strings untouched', () => {
+    const result = redactSecrets({ description: 'connects to the internal API' });
+    expect(result).toEqual({ description: 'connects to the internal API' });
+  });
 });
 
 describe('ingestMcp secret redaction', () => {

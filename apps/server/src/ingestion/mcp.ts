@@ -8,6 +8,22 @@ import type { Item } from '../types.js';
 
 const SENSITIVE_KEY_PATTERN = /key|token|secret|password|authorization|bearer/i;
 
+function redactSensitiveQueryParams(text: string): string {
+  try {
+    const url = new URL(text);
+    let changed = false;
+    for (const key of [...url.searchParams.keys()]) {
+      if (SENSITIVE_KEY_PATTERN.test(key)) {
+        url.searchParams.set(key, '<REDACTED>');
+        changed = true;
+      }
+    }
+    return changed ? url.toString() : text;
+  } catch {
+    return text;
+  }
+}
+
 export function redactSecrets(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(redactSecrets);
@@ -18,6 +34,9 @@ export function redactSecrets(value: unknown): unknown {
       result[key] = SENSITIVE_KEY_PATTERN.test(key) ? '<REDACTED>' : redactSecrets(val);
     }
     return result;
+  }
+  if (typeof value === 'string') {
+    return redactSensitiveQueryParams(value);
   }
   return value;
 }
