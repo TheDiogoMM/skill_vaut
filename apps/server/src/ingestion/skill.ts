@@ -88,6 +88,7 @@ export async function ingestSkill(
     tags: enrichment.tags,
     enrichmentSource: enrichment.source,
     globalInstallStatus,
+    downloadStatus: null,
   };
 
   return itemsRepo.create(newItem);
