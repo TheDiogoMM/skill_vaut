@@ -20,6 +20,7 @@ const item: Item = {
   tags: ['tag1'],
   enrichmentSource: 'ollama',
   globalInstallStatus: null,
+  downloadStatus: 'not_downloaded',
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01',
 };
@@ -37,6 +38,7 @@ describe('buildIndexEntries', () => {
         utility: 'Utilidade',
         tags: ['tag1'],
         localPath: '/tmp/skillvault/repos/my-repo',
+        downloadStatus: 'not_downloaded',
       },
     ]);
   });

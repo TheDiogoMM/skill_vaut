@@ -10,6 +10,7 @@ export interface IndexEntry {
   utility: string | null;
   tags: string[];
   localPath: string;
+  downloadStatus: string | null;
 }
 
 function escapeMarkdown(text: string): string {
@@ -27,6 +28,7 @@ export function buildIndexEntries(items: Item[], categories: Category[]): IndexE
     utility: item.utility,
     tags: item.tags,
     localPath: item.localPath,
+    downloadStatus: item.downloadStatus,
   }));
 }
 
@@ -48,6 +50,9 @@ export function renderIndexMarkdown(entries: IndexEntry[]): string {
       lines.push(`- **${escapedName}** (${entry.type}) — ${escapedSummary}`);
       lines.push(`  - Utilidade: ${escapedUtility}`);
       lines.push(`  - Caminho: \`${entry.localPath}\``);
+      if (entry.downloadStatus === 'not_downloaded') {
+        lines.push(`  - Status: ainda não baixado (pendente de download)`);
+      }
       lines.push(`  - Tags: ${entry.tags.join(', ') || 'nenhuma'}`);
     }
     lines.push('');
