@@ -48,6 +48,10 @@ export function deleteItem(id: number): Promise<void> {
   return request<void>(`/api/items/${id}`, { method: 'DELETE' });
 }
 
+export function downloadItem(id: number): Promise<Item> {
+  return request<Item>(`/api/items/${id}/download`, { method: 'POST' });
+}
+
 export interface CreateRepoInput {
   type: 'repo';
   name: string;

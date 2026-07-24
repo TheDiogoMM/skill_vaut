@@ -2,6 +2,7 @@ export type ItemType = 'skill' | 'repo' | 'mcp';
 export type SourceType = 'local_path' | 'upload' | 'url' | 'manual';
 export type EnrichmentSource = 'ollama' | 'gemini' | 'manual';
 export type GlobalInstallStatus = 'success' | 'failed';
+export type DownloadStatus = 'local' | 'not_downloaded' | 'downloaded';
 
 export interface Category {
   id: number;
@@ -22,6 +23,7 @@ export interface Item {
   tags: string[];
   enrichmentSource: EnrichmentSource | null;
   globalInstallStatus: GlobalInstallStatus | null;
+  downloadStatus: DownloadStatus | null;
   createdAt: string;
   updatedAt: string;
 }
