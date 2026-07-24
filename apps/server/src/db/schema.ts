@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS items (
   tags TEXT NOT NULL DEFAULT '[]',
   enrichment_source TEXT CHECK (enrichment_source IN ('ollama','gemini','manual')),
   global_install_status TEXT CHECK (global_install_status IN ('success','failed')),
+  download_status TEXT CHECK (download_status IN ('local','not_downloaded','downloaded')),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

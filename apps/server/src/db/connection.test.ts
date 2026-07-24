@@ -13,4 +13,14 @@ describe('createDb', () => {
     expect(tables).toContain('items');
     expect(tables).toContain('consultas');
   });
+
+  it('adds a download_status column to items (for pre-existing databases without it)', () => {
+    const db = createDb(':memory:');
+    const columns = db
+      .prepare('PRAGMA table_info(items)')
+      .all()
+      .map((row) => (row as { name: string }).name);
+
+    expect(columns).toContain('download_status');
+  });
 });
