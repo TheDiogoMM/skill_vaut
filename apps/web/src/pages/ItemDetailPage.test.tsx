@@ -89,6 +89,31 @@ describe('ItemDetailPage', () => {
     });
   });
 
+  it('shows a download action for a repo pending download', async () => {
+    vi.spyOn(api, 'getItem').mockResolvedValue(sampleDetail({ downloadStatus: 'not_downloaded' }));
+
+    renderWithRoute('1');
+
+    expect(await screen.findByRole('button', { name: 'Baixar' })).toBeInTheDocument();
+  });
+
+  it('downloads a repo and updates the UI in place without remounting the page', async () => {
+    const user = userEvent.setup();
+    const detail = sampleDetail({ downloadStatus: 'not_downloaded' });
+    vi.spyOn(api, 'getItem').mockResolvedValue(detail);
+    vi.spyOn(api, 'downloadItem').mockResolvedValue({ ...detail, downloadStatus: 'downloaded' });
+
+    renderWithRoute('1');
+
+    expect(await screen.findByRole('heading', { name: 'Repo A', level: 2 })).toBeInTheDocument();
+
+    const button = await screen.findByRole('button', { name: 'Baixar' });
+    await user.click(button);
+
+    expect(await screen.findByText('Baixado')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Repo A', level: 2 })).toBeInTheDocument();
+  });
+
   it('shows an error state when the item cannot be loaded', async () => {
     vi.spyOn(api, 'getItem').mockRejectedValue(new Error('not found'));
     renderWithRoute('999');

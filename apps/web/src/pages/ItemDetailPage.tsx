@@ -9,6 +9,7 @@ import { Select } from '../components/ui/forms/Select/Select.js';
 import { Input } from '../components/ui/forms/Input/Input.js';
 import { Tag } from '../components/ui/data-display/Tag/Tag.js';
 import { TypeBadge } from '../components/ui/data-display/TypeBadge/TypeBadge.js';
+import { RepoDownloadAction } from '../components/ui/data-display/RepoDownloadAction/RepoDownloadAction.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 
 export function ItemDetailPage() {
@@ -118,6 +119,7 @@ export function ItemDetailPage() {
         >
           {copied ? 'Copiado!' : 'Copiar caminho'}
         </Button>
+        <RepoDownloadAction item={item} onUpdated={(updated) => setItem({ ...item, ...updated })} />
       </div>
 
       <div
