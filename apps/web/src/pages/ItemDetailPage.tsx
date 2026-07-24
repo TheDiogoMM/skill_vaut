@@ -63,7 +63,7 @@ export function ItemDetailPage() {
         categoryId: categoryId ? Number(categoryId) : null,
         tags,
       });
-      setItem({ ...item, ...updated });
+      setItem((prev) => (prev ? { ...prev, ...updated } : prev));
       setSaveStatus('saved');
     } catch {
       setSaveStatus('error');
@@ -119,7 +119,7 @@ export function ItemDetailPage() {
         >
           {copied ? 'Copiado!' : 'Copiar caminho'}
         </Button>
-        <RepoDownloadAction item={item} onUpdated={(updated) => setItem({ ...item, ...updated })} />
+        <RepoDownloadAction item={item} onUpdated={(updated) => setItem((prev) => (prev ? { ...prev, ...updated } : prev))} />
       </div>
 
       <div

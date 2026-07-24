@@ -99,9 +99,17 @@ describe('ItemDetailPage', () => {
 
   it('downloads a repo and updates the UI in place without remounting the page', async () => {
     const user = userEvent.setup();
-    const detail = sampleDetail({ downloadStatus: 'not_downloaded' });
-    vi.spyOn(api, 'getItem').mockResolvedValue(detail);
-    vi.spyOn(api, 'downloadItem').mockResolvedValue({ ...detail, downloadStatus: 'downloaded' });
+    const detail = sampleDetail({
+      downloadStatus: 'not_downloaded',
+      content: '# Repo A\n\nConteúdo do README.',
+    });
+    const getItemSpy = vi.spyOn(api, 'getItem').mockResolvedValue(detail);
+    // The real downloadItem endpoint returns a plain Item, which has no
+    // `content` field (only ItemDetail does) — mirror that here instead of
+    // spreading `detail`, so the mock can't accidentally leak `content`
+    // into `updated` and mask a regression in the setItem merge.
+    const { content: _content, ...itemWithoutContent } = detail;
+    vi.spyOn(api, 'downloadItem').mockResolvedValue({ ...itemWithoutContent, downloadStatus: 'downloaded' });
 
     renderWithRoute('1');
 
@@ -112,6 +120,15 @@ describe('ItemDetailPage', () => {
 
     expect(await screen.findByText('Baixado')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Repo A', level: 2 })).toBeInTheDocument();
+
+    // `content` is only present on ItemDetail, not on the plain Item the
+    // download endpoint returns. Asserting it survives proves the merge
+    // still spreads the previous state rather than replacing it wholesale.
+    expect(screen.getByRole('heading', { name: 'Repo A', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Conteúdo do README.')).toBeInTheDocument();
+
+    // The page must not remount/refetch after the download completes.
+    expect(getItemSpy).toHaveBeenCalledTimes(1);
   });
 
   it('shows an error state when the item cannot be loaded', async () => {
