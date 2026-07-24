@@ -28,6 +28,7 @@ function sampleDetail(overrides: Partial<ItemDetail> = {}): ItemDetail {
     tags: [],
     enrichmentSource: null,
     globalInstallStatus: null,
+    downloadStatus: null,
     createdAt: '',
     updatedAt: '',
     content: '',
