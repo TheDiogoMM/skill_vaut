@@ -7,7 +7,8 @@ import type { MultipartFile } from '@fastify/multipart';
 import type { SkillVaultConfig } from '../config.js';
 import { ItemsRepository, type NewItem, type ItemUpdate } from '../db/repositories/items.js';
 import { CategoriesRepository } from '../db/repositories/categories.js';
-import { ingestRepo } from '../ingestion/repo.js';
+import { ingestRepo, type RepoSource } from '../ingestion/repo.js';
+import { downloadRepo } from '../ingestion/download.js';
 import { ingestSkill, type SkillSource } from '../ingestion/skill.js';
 import { ingestMcp } from '../ingestion/mcp.js';
 import { regenerateIndex } from '../index/generate.js';
@@ -45,9 +46,20 @@ export function itemsRoutes(config: SkillVaultConfig) {
 
       try {
         if (type === 'repo') {
-          const url = fieldValue(body.url);
-          if (!url) return reply.status(400).send({ error: 'url is required for type=repo' });
-          const item = await ingestRepo(config, itemsRepo, categoriesRepo, { name, url });
+          const sourceType = fieldValue(body.source_type);
+          let source: RepoSource;
+
+          if (sourceType === 'local_path') {
+            const localPath = fieldValue(body.path);
+            if (!localPath) return reply.status(400).send({ error: 'path is required for source_type=local_path' });
+            source = { kind: 'local_path', path: localPath };
+          } else {
+            const url = fieldValue(body.url);
+            if (!url) return reply.status(400).send({ error: 'url is required for type=repo' });
+            source = { kind: 'url', url };
+          }
+
+          const item = await ingestRepo(config, itemsRepo, categoriesRepo, { name, source });
           try {
             regenerate();
           } catch (err) {
@@ -206,6 +218,27 @@ export function itemsRoutes(config: SkillVaultConfig) {
         app.log.error(err, 'failed to regenerate index after item deletion');
       }
       return reply.status(204).send();
+    });
+
+    app.post('/api/items/:id/download', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const item = itemsRepo.getById(Number(id));
+      if (!item) return reply.status(404).send({ error: 'item not found' });
+      if (item.type !== 'repo' || item.downloadStatus !== 'not_downloaded') {
+        return reply.status(409).send({ error: 'item is not pending download' });
+      }
+
+      try {
+        const updated = await downloadRepo(itemsRepo, item);
+        try {
+          regenerate();
+        } catch (err) {
+          app.log.error(err, 'failed to regenerate index after item download');
+        }
+        return updated;
+      } catch (err) {
+        return reply.status(422).send({ error: (err as Error).message });
+      }
     });
   };
 }

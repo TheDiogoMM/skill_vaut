@@ -98,6 +98,44 @@ describe('POST /api/items (type=repo)', () => {
 
     expect(response.statusCode).toBe(400);
   });
+
+  it('ingests a repo by local_path without cloning, and captures the git remote', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+    execFileSync('git', ['remote', 'add', 'origin', 'https://example.com/own/fixture.git'], { cwd: fixtureRepo });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Repo Local', source_type: 'local_path', path: fixtureRepo },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const body = response.json();
+    expect(body.downloadStatus).toBe('local');
+    expect(body.localPath).toBe(fixtureRepo);
+    expect(body.sourceValue).toBe('https://example.com/own/fixture.git');
+  });
+
+  it('ingests a repo by url as not_downloaded (no permanent clone yet)', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Repo Remoto', url: fixtureRepo },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const body = response.json();
+    expect(body.downloadStatus).toBe('not_downloaded');
+    expect(fs.existsSync(body.localPath)).toBe(false);
+  });
 });
 
 describe('POST /api/items (type=skill, source_type=local_path)', () => {
@@ -426,5 +464,70 @@ describe('GET /api/items/:id content field', () => {
     const response = await app.inject({ method: 'GET', url: `/api/items/${item.id}` });
     const body = response.json();
     expect(body.content).toContain('"command": "npx"');
+  });
+});
+
+describe('POST /api/items/:id/download', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-download-route-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it('clones a not_downloaded repo item and flips it to downloaded', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Para Baixar', url: fixtureRepo },
+    });
+    const created = createResponse.json();
+    expect(created.downloadStatus).toBe('not_downloaded');
+
+    const downloadResponse = await app.inject({
+      method: 'POST',
+      url: `/api/items/${created.id}/download`,
+    });
+
+    expect(downloadResponse.statusCode).toBe(200);
+    const downloaded = downloadResponse.json();
+    expect(downloaded.downloadStatus).toBe('downloaded');
+    expect(fs.existsSync(path.join(downloaded.localPath, 'README.md'))).toBe(true);
+  });
+
+  it('returns 409 when the item is not pending download', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Local', source_type: 'local_path', path: fixtureRepo },
+    });
+    const created = createResponse.json();
+    expect(created.downloadStatus).toBe('local');
+
+    const downloadResponse = await app.inject({
+      method: 'POST',
+      url: `/api/items/${created.id}/download`,
+    });
+
+    expect(downloadResponse.statusCode).toBe(409);
+  });
+
+  it('returns 404 for a nonexistent item', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const response = await app.inject({ method: 'POST', url: '/api/items/999/download' });
+
+    expect(response.statusCode).toBe(404);
   });
 });
