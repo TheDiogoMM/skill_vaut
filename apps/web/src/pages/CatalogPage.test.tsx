@@ -137,4 +137,28 @@ describe('CatalogPage', () => {
       expect(listCategoriesSpy).toHaveBeenCalled();
     });
   });
+
+  it('updates the card in place after a repo download, without refetching the list', async () => {
+    const user = userEvent.setup();
+    const repoItem = sampleItem({
+      id: 1,
+      name: 'Repo A',
+      downloadStatus: 'not_downloaded',
+    });
+    const listItemsSpy = vi.spyOn(api, 'listItems').mockResolvedValue([repoItem]);
+    vi.spyOn(api, 'listCategories').mockResolvedValue([]);
+    vi.spyOn(api, 'downloadItem').mockResolvedValue({ ...repoItem, downloadStatus: 'downloaded' });
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Baixar' }));
+
+    expect(await screen.findByText('Baixado')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Baixar' })).not.toBeInTheDocument();
+    expect(listItemsSpy).toHaveBeenCalledTimes(1);
+  });
 });
