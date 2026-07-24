@@ -208,7 +208,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
       const item = itemsRepo.getById(Number(id));
       if (!item) return reply.status(404).send({ error: 'item not found' });
 
-      if (fs.existsSync(item.localPath)) {
+      if (!(item.type === 'repo' && item.sourceType === 'local_path') && fs.existsSync(item.localPath)) {
         fs.rmSync(item.localPath, { recursive: true, force: true });
       }
       itemsRepo.delete(item.id);

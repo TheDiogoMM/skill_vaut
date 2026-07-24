@@ -379,6 +379,63 @@ describe('items list/detail/update/delete', () => {
     expect(getAfterDelete.statusCode).toBe(404);
   });
 
+  it('deletes a local_path repo item WITHOUT touching the user\'s real directory on disk', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Repo Local a Apagar', source_type: 'local_path', path: fixtureRepo },
+    });
+    const item = created.json();
+    expect(item.localPath).toBe(fixtureRepo);
+
+    const del = await app.inject({ method: 'DELETE', url: `/api/items/${item.id}` });
+    expect(del.statusCode).toBe(204);
+
+    const getAfterDelete = await app.inject({ method: 'GET', url: `/api/items/${item.id}` });
+    expect(getAfterDelete.statusCode).toBe(404);
+
+    // The critical assertion: the user's real directory must still exist on disk.
+    expect(fs.existsSync(fixtureRepo)).toBe(true);
+
+    fs.rmSync(fixtureRepo, { recursive: true, force: true });
+  });
+
+  it('deletes a url-sourced repo item that has been downloaded, removing its vault-owned clone', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Repo URL a Apagar', url: fixtureRepo },
+    });
+    const item = created.json();
+    expect(item.downloadStatus).toBe('not_downloaded');
+
+    const downloadResponse = await app.inject({
+      method: 'POST',
+      url: `/api/items/${item.id}/download`,
+    });
+    const downloaded = downloadResponse.json();
+    expect(downloaded.downloadStatus).toBe('downloaded');
+    expect(fs.existsSync(downloaded.localPath)).toBe(true);
+
+    const del = await app.inject({ method: 'DELETE', url: `/api/items/${item.id}` });
+    expect(del.statusCode).toBe(204);
+
+    // This is a vault-owned clone (not the user's real directory), so it must be removed.
+    expect(fs.existsSync(downloaded.localPath)).toBe(false);
+
+    fs.rmSync(fixtureRepo, { recursive: true, force: true });
+  });
+
   it('returns 400 for PATCH with a missing/empty body', async () => {
     const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
     ensureSkillVaultDirs(config);
