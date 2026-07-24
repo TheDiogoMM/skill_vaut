@@ -124,4 +124,60 @@ describe('RecommendPage', () => {
 
     expect(await screen.findByText(/app de leitura de PDFs/)).toBeInTheDocument();
   });
+
+  it('shows a download action for a repo result pending download', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [],
+      repos: [
+        {
+          ...sampleItem({ type: 'repo', downloadStatus: 'not_downloaded' }),
+          motivo: 'Já resolve o que você precisa',
+        },
+      ],
+      mcps: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    expect(await screen.findByRole('button', { name: 'Baixar' })).toBeInTheDocument();
+  });
+
+  it('downloads a repo result and updates it in place while preserving the motivo', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [],
+      repos: [
+        {
+          ...sampleItem({ type: 'repo', downloadStatus: 'not_downloaded' }),
+          motivo: 'Já resolve o que você precisa',
+        },
+      ],
+      mcps: [],
+    });
+    vi.spyOn(api, 'downloadItem').mockResolvedValue(sampleItem({ type: 'repo', downloadStatus: 'downloaded' }));
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Baixar' }));
+
+    expect(await screen.findByText('Baixado')).toBeInTheDocument();
+    expect(screen.getByText('Já resolve o que você precisa')).toBeInTheDocument();
+  });
 });

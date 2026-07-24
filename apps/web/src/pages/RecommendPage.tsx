@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getRecommendations, listConsultas } from '../api/client.js';
-import type { Consulta, RecommendedItem, RecommendResult } from '../types.js';
+import type { Consulta, Item, RecommendedItem, RecommendResult } from '../types.js';
 import { Textarea } from '../components/ui/forms/Textarea/Textarea.js';
 import { Button } from '../components/ui/core/Button/Button.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
+import { RepoDownloadAction } from '../components/ui/data-display/RepoDownloadAction/RepoDownloadAction.js';
 
 const EMPTY_MESSAGES = {
   skills: 'Nenhuma skill do catálogo cobre essa necessidade.',
@@ -16,9 +17,10 @@ interface ResultColumnProps {
   title: string;
   items: RecommendedItem[];
   emptyMessage: string;
+  onItemUpdated: (item: Item) => void;
 }
 
-function ResultColumn({ title, items, emptyMessage }: ResultColumnProps) {
+function ResultColumn({ title, items, emptyMessage, onItemUpdated }: ResultColumnProps) {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', flex: 1, minWidth: 220 }}>
       <h2
@@ -55,6 +57,7 @@ function ResultColumn({ title, items, emptyMessage }: ResultColumnProps) {
             <code style={{ fontSize: 11, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}>
               {item.localPath}
             </code>
+            <RepoDownloadAction item={item} onUpdated={onItemUpdated} />
           </div>
         ))
       )}
@@ -74,6 +77,15 @@ export function RecommendPage() {
       .then(setConsultas)
       .catch(() => {});
   }, [result]);
+
+  function handleItemUpdated(updated: Item) {
+    setResult((prev) => {
+      if (!prev) return prev;
+      const patch = (list: RecommendedItem[]) =>
+        list.map((it) => (it.id === updated.id ? { ...it, ...updated } : it));
+      return { skills: patch(prev.skills), repos: patch(prev.repos), mcps: patch(prev.mcps) };
+    });
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -116,9 +128,24 @@ export function RecommendPage() {
 
       {result && (
         <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
-          <ResultColumn title="Skills" items={result.skills} emptyMessage={EMPTY_MESSAGES.skills} />
-          <ResultColumn title="Repos" items={result.repos} emptyMessage={EMPTY_MESSAGES.repos} />
-          <ResultColumn title="MCPs" items={result.mcps} emptyMessage={EMPTY_MESSAGES.mcps} />
+          <ResultColumn
+            title="Skills"
+            items={result.skills}
+            emptyMessage={EMPTY_MESSAGES.skills}
+            onItemUpdated={handleItemUpdated}
+          />
+          <ResultColumn
+            title="Repos"
+            items={result.repos}
+            emptyMessage={EMPTY_MESSAGES.repos}
+            onItemUpdated={handleItemUpdated}
+          />
+          <ResultColumn
+            title="MCPs"
+            items={result.mcps}
+            emptyMessage={EMPTY_MESSAGES.mcps}
+            onItemUpdated={handleItemUpdated}
+          />
         </div>
       )}
 
