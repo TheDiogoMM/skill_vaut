@@ -25,6 +25,21 @@ describe('loadConfig', () => {
     expect(config.geminiApiKey).toBe('abc123');
     expect(config.port).toBe(4000);
   });
+
+  it('defaults claudeSkillsDir and claudeConfigPath to the standard Claude Code locations', () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    expect(config.claudeSkillsDir).toBe(path.join(os.homedir(), '.claude', 'skills'));
+    expect(config.claudeConfigPath).toBe(path.join(os.homedir(), '.claude.json'));
+  });
+
+  it('honors CLAUDE_SKILLS_DIR and CLAUDE_CONFIG_PATH overrides', () => {
+    const config = loadConfig({
+      CLAUDE_SKILLS_DIR: '/tmp/custom-skills',
+      CLAUDE_CONFIG_PATH: '/tmp/custom-claude.json',
+    } as NodeJS.ProcessEnv);
+    expect(config.claudeSkillsDir).toBe('/tmp/custom-skills');
+    expect(config.claudeConfigPath).toBe('/tmp/custom-claude.json');
+  });
 });
 
 describe('ensureSkillVaultDirs', () => {
