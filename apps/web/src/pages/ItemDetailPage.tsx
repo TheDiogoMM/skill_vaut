@@ -10,6 +10,7 @@ import { Input } from '../components/ui/forms/Input/Input.js';
 import { Tag } from '../components/ui/data-display/Tag/Tag.js';
 import { TypeBadge } from '../components/ui/data-display/TypeBadge/TypeBadge.js';
 import { RepoDownloadAction } from '../components/ui/data-display/RepoDownloadAction/RepoDownloadAction.js';
+import { GlobalInstallAction } from '../components/ui/data-display/GlobalInstallAction/GlobalInstallAction.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 
 export function ItemDetailPage() {
@@ -120,6 +121,7 @@ export function ItemDetailPage() {
           {copied ? 'Copiado!' : 'Copiar caminho'}
         </Button>
         <RepoDownloadAction item={item} onUpdated={(updated) => setItem((prev) => (prev ? { ...prev, ...updated } : prev))} />
+        <GlobalInstallAction item={item} onUpdated={(updated) => setItem((prev) => (prev ? { ...prev, ...updated } : prev))} />
       </div>
 
       <div

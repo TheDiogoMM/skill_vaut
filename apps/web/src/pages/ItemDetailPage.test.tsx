@@ -202,4 +202,14 @@ describe('ItemDetailPage', () => {
     expect(await screen.findByRole('heading', { name: 'Item 2', level: 2 })).toBeInTheDocument();
     expect(screen.queryByText('Salvo!')).not.toBeInTheDocument();
   });
+
+  it('shows a global install action for a skill pending install', async () => {
+    vi.spyOn(api, 'getItem').mockResolvedValue(
+      sampleDetail({ type: 'skill', downloadStatus: null, installedGlobally: false })
+    );
+
+    renderWithRoute('1');
+
+    expect(await screen.findByRole('button', { name: 'Instalar globalmente' })).toBeInTheDocument();
+  });
 });

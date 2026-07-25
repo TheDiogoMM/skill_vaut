@@ -182,4 +182,25 @@ describe('RecommendPage', () => {
     expect(await screen.findByText('Baixado')).toBeInTheDocument();
     expect(screen.getByText('Já resolve o que você precisa')).toBeInTheDocument();
   });
+
+  it('shows a global install action for a skill result not yet installed', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [{ ...sampleItem({ installedGlobally: false }), motivo: 'Ajuda a extrair texto de PDFs' }],
+      repos: [],
+      mcps: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    expect(await screen.findByRole('button', { name: 'Instalar globalmente' })).toBeInTheDocument();
+  });
 });

@@ -6,6 +6,7 @@ import { Textarea } from '../components/ui/forms/Textarea/Textarea.js';
 import { Button } from '../components/ui/core/Button/Button.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 import { RepoDownloadAction } from '../components/ui/data-display/RepoDownloadAction/RepoDownloadAction.js';
+import { GlobalInstallAction } from '../components/ui/data-display/GlobalInstallAction/GlobalInstallAction.js';
 
 const EMPTY_MESSAGES = {
   skills: 'Nenhuma skill do catálogo cobre essa necessidade.',
@@ -58,6 +59,7 @@ function ResultColumn({ title, items, emptyMessage, onItemUpdated }: ResultColum
               {item.localPath}
             </code>
             <RepoDownloadAction item={item} onUpdated={onItemUpdated} />
+            <GlobalInstallAction item={item} onUpdated={onItemUpdated} />
           </div>
         ))
       )}

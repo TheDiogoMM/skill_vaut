@@ -66,4 +66,13 @@ describe('ItemCard', () => {
     );
     expect(screen.getByRole('button', { name: 'Baixar' })).toBeInTheDocument();
   });
+
+  it('shows the global install action for a skill not yet installed', () => {
+    render(
+      <MemoryRouter>
+        <ItemCard item={sampleItem({ type: 'skill', downloadStatus: null, installedGlobally: false })} />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('button', { name: 'Instalar globalmente' })).toBeInTheDocument();
+  });
 });

@@ -3,6 +3,7 @@ import type { Item } from '../../../../types.js';
 import { TypeBadge } from '../TypeBadge/TypeBadge.js';
 import { Tag } from '../Tag/Tag.js';
 import { RepoDownloadAction } from '../RepoDownloadAction/RepoDownloadAction.js';
+import { GlobalInstallAction } from '../GlobalInstallAction/GlobalInstallAction.js';
 
 export interface ItemCardProps {
   item: Item;
@@ -56,6 +57,7 @@ export function ItemCard({ item, onUpdated }: ItemCardProps) {
         </code>
       )}
       <RepoDownloadAction item={item} onUpdated={onUpdated} />
+      <GlobalInstallAction item={item} onUpdated={onUpdated} />
     </div>
   );
 }
