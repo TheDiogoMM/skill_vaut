@@ -136,6 +136,23 @@ describe('POST /api/items (type=repo)', () => {
     expect(body.downloadStatus).toBe('not_downloaded');
     expect(fs.existsSync(body.localPath)).toBe(false);
   });
+
+  it('includes installedGlobally=null and hasRedactedSecret=null on a repo item', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Repo Status', source_type: 'local_path', path: fixtureRepo },
+    });
+
+    const body = response.json();
+    expect(body.installedGlobally).toBeNull();
+    expect(body.hasRedactedSecret).toBeNull();
+  });
 });
 
 describe('POST /api/items (type=skill, source_type=local_path)', () => {
@@ -586,5 +603,62 @@ describe('POST /api/items/:id/download', () => {
     const response = await app.inject({ method: 'POST', url: '/api/items/999/download' });
 
     expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('GET /api/items includes global status for skill and mcp items', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-global-status-${Date.now()}`);
+  const claudeSkillsDir = path.join(os.tmpdir(), `skillvault-claude-skills-${Date.now()}`);
+  const claudeConfigPath = path.join(os.tmpdir(), `skillvault-claude-config-${Date.now()}.json`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(claudeSkillsDir, { recursive: true, force: true });
+    fs.rmSync(claudeConfigPath, { force: true });
+  });
+
+  it('reflects installedGlobally=true once a skill folder exists at claudeSkillsDir', async () => {
+    const config = loadConfig({
+      SKILLVAULT_HOME: home,
+      CLAUDE_SKILLS_DIR: claudeSkillsDir,
+      CLAUDE_CONFIG_PATH: claudeConfigPath,
+    } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const sourceDir = path.join(os.tmpdir(), `skillvault-skill-status-source-${Date.now()}`);
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(path.join(sourceDir, 'SKILL.md'), '# Minha Skill');
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'skill', name: 'Minha Skill', source_type: 'local_path', path: sourceDir },
+    });
+    const created = create.json();
+    expect(created.installedGlobally).toBe(false);
+
+    fs.mkdirSync(path.join(claudeSkillsDir, path.basename(created.localPath)), { recursive: true });
+
+    const getResponse = await app.inject({ method: 'GET', url: `/api/items/${created.id}` });
+    expect(getResponse.json().installedGlobally).toBe(true);
+  });
+
+  it('reflects hasRedactedSecret=true for an mcp whose config was redacted', async () => {
+    const config = loadConfig({
+      SKILLVAULT_HOME: home,
+      CLAUDE_SKILLS_DIR: claudeSkillsDir,
+      CLAUDE_CONFIG_PATH: claudeConfigPath,
+    } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'mcp', name: 'Meu MCP', config: { env: { STRIPE_SECRET_KEY: 'sk_test_real' } } },
+    });
+
+    expect(create.json().hasRedactedSecret).toBe(true);
   });
 });

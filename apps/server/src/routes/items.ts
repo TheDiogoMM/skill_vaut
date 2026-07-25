@@ -13,6 +13,8 @@ import { ingestSkill, type SkillSource } from '../ingestion/skill.js';
 import { ingestMcp } from '../ingestion/mcp.js';
 import { regenerateIndex } from '../index/generate.js';
 import { readItemContent } from '../content.js';
+import { computeGlobalStatus } from '../global-status.js';
+import type { Item } from '../types.js';
 
 // With @fastify/multipart's `attachFieldsToBody: true`, every plain field on a
 // multipart request arrives as `{ value: <actual value>, ... }` instead of the
@@ -33,6 +35,10 @@ export function itemsRoutes(config: SkillVaultConfig) {
 
     function regenerate() {
       regenerateIndex(itemsRepo, categoriesRepo, config.indexJsonPath, config.indexMdPath);
+    }
+
+    function withGlobalStatus(item: Item) {
+      return { ...item, ...computeGlobalStatus(config, item) };
     }
 
     app.post('/api/items', async (request, reply) => {
@@ -65,7 +71,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
           } catch (err) {
             app.log.error(err, 'failed to regenerate index after item creation');
           }
-          return reply.status(201).send(item);
+          return reply.status(201).send(withGlobalStatus(item));
         }
 
         if (type === 'skill') {
@@ -120,7 +126,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
           } catch (err) {
             app.log.error(err, 'failed to regenerate index after item creation');
           }
-          return reply.status(201).send(item);
+          return reply.status(201).send(withGlobalStatus(item));
         }
 
         if (type === 'mcp') {
@@ -137,7 +143,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
           } catch (err) {
             app.log.error(err, 'failed to regenerate index after item creation');
           }
-          return reply.status(201).send(item);
+          return reply.status(201).send(withGlobalStatus(item));
         }
 
         return reply.status(400).send({ error: `unsupported type: ${type}` });
@@ -162,19 +168,20 @@ export function itemsRoutes(config: SkillVaultConfig) {
         }
       }
 
-      return itemsRepo.list({
+      const items = itemsRepo.list({
         q,
         type: type as NewItem['type'] | undefined,
         categoryId,
         tag,
       });
+      return items.map(withGlobalStatus);
     });
 
     app.get('/api/items/:id', async (request, reply) => {
       const { id } = request.params as { id: string };
       const item = itemsRepo.getById(Number(id));
       if (!item) return reply.status(404).send({ error: 'item not found' });
-      return { ...item, content: readItemContent(item) };
+      return { ...withGlobalStatus(item), content: readItemContent(item) };
     });
 
     app.patch('/api/items/:id', async (request, reply) => {
@@ -200,7 +207,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
       } catch (err) {
         app.log.error(err, 'failed to regenerate index after item update');
       }
-      return item;
+      return withGlobalStatus(item);
     });
 
     app.delete('/api/items/:id', async (request, reply) => {
@@ -235,7 +242,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
         } catch (err) {
           app.log.error(err, 'failed to regenerate index after item download');
         }
-        return updated;
+        return withGlobalStatus(updated);
       } catch (err) {
         return reply.status(422).send({ error: (err as Error).message });
       }
