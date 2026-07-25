@@ -6,6 +6,7 @@ import { callOllama } from '../enrichment/ollama.js';
 import { callGemini } from '../enrichment/gemini.js';
 import { buildRecommendPrompt, type CatalogItemForPrompt } from './prompt.js';
 import { parseRecommendJson, type ParsedRecommendation } from './parse.js';
+import { computeGlobalStatus } from '../global-status.js';
 
 function toCatalogEntry(item: Item, categoryNameById: Map<number, string>): CatalogItemForPrompt {
   return {
@@ -22,7 +23,8 @@ function toCatalogEntry(item: Item, categoryNameById: Map<number, string>): Cata
 function resolveList(
   entries: ParsedRecommendation[],
   expectedType: Item['type'],
-  itemsRepo: ItemsRepository
+  itemsRepo: ItemsRepository,
+  config: SkillVaultConfig
 ): RecommendedItem[] {
   const resolved: RecommendedItem[] = [];
   const seenIds = new Set<number>();
@@ -31,7 +33,7 @@ function resolveList(
     const item = itemsRepo.getById(entry.id);
     if (!item || item.type !== expectedType) continue;
     seenIds.add(entry.id);
-    resolved.push({ ...item, motivo: entry.motivo });
+    resolved.push({ ...item, ...computeGlobalStatus(config, item), motivo: entry.motivo });
   }
   return resolved;
 }
@@ -63,8 +65,8 @@ export async function getRecommendations(
   if (!parsed) return null;
 
   return {
-    skills: resolveList(parsed.skills, 'skill', itemsRepo),
-    repos: resolveList(parsed.repos, 'repo', itemsRepo),
-    mcps: resolveList(parsed.mcps, 'mcp', itemsRepo),
+    skills: resolveList(parsed.skills, 'skill', itemsRepo, config),
+    repos: resolveList(parsed.repos, 'repo', itemsRepo, config),
+    mcps: resolveList(parsed.mcps, 'mcp', itemsRepo, config),
   };
 }

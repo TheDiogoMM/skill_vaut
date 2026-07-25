@@ -5,6 +5,8 @@ import { loadConfig } from '../config.js';
 import { ItemsRepository, type NewItem } from '../db/repositories/items.js';
 import { CategoriesRepository } from '../db/repositories/categories.js';
 import { getRecommendations } from './recommend.js';
+import type { RecommendedItem } from '../types.js';
+import type { GlobalStatus } from '../global-status.js';
 
 function fakeResponse(body: unknown, ok = true): Response {
   return { ok, json: async () => body } as Response;
@@ -67,8 +69,12 @@ describe('getRecommendations', () => {
 
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
 
-    expect(result?.skills).toEqual([{ ...skill, motivo: 'Ajuda a extrair texto de PDFs' }]);
-    expect(result?.repos).toEqual([{ ...repoItem, motivo: 'Bom ponto de partida' }]);
+    expect(result?.skills).toEqual([
+      { ...skill, installedGlobally: false, hasRedactedSecret: null, motivo: 'Ajuda a extrair texto de PDFs' },
+    ]);
+    expect(result?.repos).toEqual([
+      { ...repoItem, installedGlobally: null, hasRedactedSecret: null, motivo: 'Bom ponto de partida' },
+    ]);
     expect(result?.mcps).toEqual([]);
   });
 
@@ -88,7 +94,29 @@ describe('getRecommendations', () => {
 
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
 
-    expect(result?.skills).toEqual([{ ...skill, motivo: 'primeira menção' }]);
+    expect(result?.skills).toEqual([
+      { ...skill, installedGlobally: false, hasRedactedSecret: null, motivo: 'primeira menção' },
+    ]);
+  });
+
+  it('includes computed global status fields on resolved items', async () => {
+    const skill = itemsRepo.create(baseNewItem({ type: 'skill', name: 'PDF Parser' }));
+
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const raw = JSON.stringify({
+      skills: [{ id: skill.id, motivo: 'Ajuda a extrair texto de PDFs' }],
+      repos: [],
+      mcps: [],
+    });
+    const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
+
+    const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
+
+    const resolvedSkill = result?.skills[0] as (RecommendedItem & GlobalStatus) | undefined;
+
+    expect(resolvedSkill).toHaveProperty('installedGlobally');
+    expect(resolvedSkill).toHaveProperty('hasRedactedSecret');
+    expect(resolvedSkill?.installedGlobally).toBe(false);
   });
 
   it('falls back to Gemini when Ollama fails', async () => {
