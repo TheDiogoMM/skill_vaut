@@ -1,10 +1,25 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createDb } from '../db/connection.js';
 import { loadConfig, ensureSkillVaultDirs } from '../config.js';
 import { buildApp } from '../app.js';
+
+// Item creation in this file goes through real enrichment, which otherwise
+// calls out to Ollama/Gemini over the network — mock it so this test doesn't
+// depend on (or slow down waiting on) whatever LLM backend happens to be
+// reachable on the machine running the suite.
+vi.mock('../enrichment/enrich.js', () => ({
+  enrichContent: vi.fn(async () => ({
+    summary: 'Resumo',
+    utility: 'Utilidade',
+    category: 'automacao',
+    tags: ['mcp'],
+    source: 'manual' as const,
+  })),
+  buildEnrichmentPrompt: vi.fn(() => ''),
+}));
 
 describe('GET /api/index', () => {
   const home = path.join(os.tmpdir(), `skillvault-index-route-${Date.now()}`);

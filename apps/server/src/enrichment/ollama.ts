@@ -9,7 +9,7 @@ export async function callOllama(
     const response = await fetchImpl(`${config.ollamaUrl}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: config.ollamaModel, prompt, stream: false }),
+      body: JSON.stringify({ model: config.ollamaModel, prompt, stream: false, format: 'json' }),
     });
     if (!response.ok) return null;
     const data = (await response.json()) as { response?: string };
