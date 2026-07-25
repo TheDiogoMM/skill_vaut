@@ -15,6 +15,21 @@ ${content.slice(0, 6000)}
 """`;
 }
 
+// Passed as Ollama's `format` field (grammar-constrained decoding) so small
+// local models reliably include every required key instead of dropping ones
+// they consider optional (format:"json" alone only guarantees valid JSON
+// syntax, not that this exact shape is followed).
+export const ENRICHMENT_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    resumo: { type: 'string' },
+    utilidade: { type: 'string' },
+    categoria: { type: 'string' },
+    tags: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['resumo', 'utilidade', 'categoria', 'tags'],
+};
+
 export async function enrichContent(
   config: SkillVaultConfig,
   itemType: string,
@@ -23,7 +38,7 @@ export async function enrichContent(
 ): Promise<EnrichmentResult> {
   const prompt = buildEnrichmentPrompt(itemType, content);
 
-  const ollamaRaw = await callOllama(config, prompt, fetchImpl);
+  const ollamaRaw = await callOllama(config, prompt, fetchImpl, ENRICHMENT_JSON_SCHEMA);
   if (ollamaRaw) {
     const parsed = parseEnrichmentJson(ollamaRaw);
     if (parsed) return { ...parsed, source: 'ollama' };

@@ -30,3 +30,26 @@ Responda APENAS com um JSON no formato:
 
 Cite apenas ids que aparecem na lista acima. Se nada do catálogo servir para um tipo, retorne um array vazio para esse tipo.`;
 }
+
+// Passed as Ollama's `format` field (grammar-constrained decoding) so small
+// local models are forced to include the required "motivo" key on every
+// entry — format:"json" alone only guarantees valid JSON syntax, not that
+// the model actually follows this exact shape.
+const RECOMMENDATION_LIST_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: { id: { type: 'integer' }, motivo: { type: 'string' } },
+    required: ['id', 'motivo'],
+  },
+};
+
+export const RECOMMEND_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    skills: RECOMMENDATION_LIST_SCHEMA,
+    repos: RECOMMENDATION_LIST_SCHEMA,
+    mcps: RECOMMENDATION_LIST_SCHEMA,
+  },
+  required: ['skills', 'repos', 'mcps'],
+};

@@ -25,6 +25,25 @@ describe('callOllama', () => {
     });
   });
 
+  it('uses a caller-supplied JSON schema for format when provided, instead of the bare "json" string', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    let capturedBody: Record<string, unknown> | null = null;
+    const fetchImpl = (async (_url: string, init?: RequestInit) => {
+      capturedBody = JSON.parse(init!.body as string);
+      return fakeResponse({ response: '{}' });
+    }) as typeof fetch;
+
+    const schema = {
+      type: 'object',
+      properties: { resumo: { type: 'string' } },
+      required: ['resumo'],
+    };
+
+    await callOllama(config, 'algum prompt', fetchImpl, schema);
+
+    expect(capturedBody).toMatchObject({ format: schema });
+  });
+
   it('still returns the response text when the call succeeds', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     const fetchImpl = (async () => fakeResponse({ response: '{"a":1}' })) as typeof fetch;

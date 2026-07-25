@@ -4,7 +4,7 @@ import type { CategoriesRepository } from '../db/repositories/categories.js';
 import type { Item, RecommendedItem, RecommendResult } from '../types.js';
 import { callOllama } from '../enrichment/ollama.js';
 import { callGemini } from '../enrichment/gemini.js';
-import { buildRecommendPrompt, type CatalogItemForPrompt } from './prompt.js';
+import { buildRecommendPrompt, RECOMMEND_JSON_SCHEMA, type CatalogItemForPrompt } from './prompt.js';
 import { parseRecommendJson, type ParsedRecommendation } from './parse.js';
 import { computeGlobalStatus } from '../global-status.js';
 
@@ -54,7 +54,7 @@ export async function getRecommendations(
   const catalog = allItems.map((item) => toCatalogEntry(item, categoryNameById));
   const prompt = buildRecommendPrompt(ideia, catalog);
 
-  const ollamaRaw = await callOllama(config, prompt, fetchImpl);
+  const ollamaRaw = await callOllama(config, prompt, fetchImpl, RECOMMEND_JSON_SCHEMA);
   let parsed = ollamaRaw ? parseRecommendJson(ollamaRaw) : null;
 
   if (!parsed) {
