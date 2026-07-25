@@ -19,6 +19,8 @@ function sampleItem(overrides: Partial<Item> = {}): Item {
     enrichmentSource: null,
     globalInstallStatus: null,
     downloadStatus: null,
+    installedGlobally: null,
+    hasRedactedSecret: null,
     createdAt: '',
     updatedAt: '',
     ...overrides,
