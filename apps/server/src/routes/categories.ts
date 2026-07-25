@@ -10,7 +10,7 @@ export function categoriesRoutes(config: SkillVaultConfig) {
     const itemsRepo = new ItemsRepository(app.db);
 
     function regenerate() {
-      regenerateIndex(itemsRepo, repo, config.indexJsonPath, config.indexMdPath);
+      regenerateIndex(itemsRepo, repo, config, config.indexJsonPath, config.indexMdPath);
     }
 
     app.get('/api/categories', async () => repo.list());

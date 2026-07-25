@@ -35,7 +35,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
     const categoriesRepo = new CategoriesRepository(app.db);
 
     function regenerate() {
-      regenerateIndex(itemsRepo, categoriesRepo, config.indexJsonPath, config.indexMdPath);
+      regenerateIndex(itemsRepo, categoriesRepo, config, config.indexJsonPath, config.indexMdPath);
     }
 
     function withGlobalStatus(item: Item) {

@@ -7,6 +7,8 @@ import { buildIndexEntries, renderIndexMarkdown, writeIndexFiles } from './gener
 
 const category: Category = { id: 1, name: 'dev-tools', createdAt: '2026-01-01' };
 
+const testLocations = { claudeSkillsDir: '/nonexistent-skills-dir', claudeConfigPath: '/nonexistent-config.json' };
+
 const item: Item = {
   id: 1,
   type: 'repo',
@@ -27,7 +29,7 @@ const item: Item = {
 
 describe('buildIndexEntries', () => {
   it('resolves category names and preserves item fields', () => {
-    const entries = buildIndexEntries([item], [category]);
+    const entries = buildIndexEntries([item], [category], testLocations);
     expect(entries).toEqual([
       {
         id: 1,
@@ -39,6 +41,7 @@ describe('buildIndexEntries', () => {
         tags: ['tag1'],
         localPath: '/tmp/skillvault/repos/my-repo',
         downloadStatus: 'not_downloaded',
+        installedGlobally: null,
       },
     ]);
   });
@@ -46,7 +49,7 @@ describe('buildIndexEntries', () => {
 
 describe('renderIndexMarkdown', () => {
   it('groups entries by category', () => {
-    const md = renderIndexMarkdown(buildIndexEntries([item], [category]));
+    const md = renderIndexMarkdown(buildIndexEntries([item], [category], testLocations));
     expect(md).toContain('## dev-tools');
     expect(md).toContain('my-repo');
   });
@@ -58,7 +61,7 @@ describe('renderIndexMarkdown', () => {
       summary: 'Summary with _underscore* and **asterisks**',
       utility: 'Utility with `backticks` [brackets]',
     };
-    const md = renderIndexMarkdown(buildIndexEntries([itemWithSpecialChars], [category]));
+    const md = renderIndexMarkdown(buildIndexEntries([itemWithSpecialChars], [category], testLocations));
 
     // Verify escaped characters are present
     expect(md).toContain('\\*');
@@ -79,7 +82,7 @@ describe('renderIndexMarkdown', () => {
       ...item,
       localPath: '/tmp/my_project[env]/repo',
     };
-    const md = renderIndexMarkdown(buildIndexEntries([itemWithSpecialPath], [category]));
+    const md = renderIndexMarkdown(buildIndexEntries([itemWithSpecialPath], [category], testLocations));
 
     // Verify localPath contains raw special characters (not escaped backslashes)
     expect(md).toContain('`/tmp/my_project[env]/repo`');
@@ -101,7 +104,7 @@ describe('writeIndexFiles', () => {
     fs.mkdirSync(dir, { recursive: true });
     const jsonPath = path.join(dir, 'index.json');
     const mdPath = path.join(dir, 'INDEX.md');
-    const entries = buildIndexEntries([item], [category]);
+    const entries = buildIndexEntries([item], [category], testLocations);
 
     writeIndexFiles(entries, jsonPath, mdPath);
 
