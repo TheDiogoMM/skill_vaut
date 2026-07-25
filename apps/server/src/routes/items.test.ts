@@ -662,3 +662,173 @@ describe('GET /api/items includes global status for skill and mcp items', () => 
     expect(create.json().hasRedactedSecret).toBe(true);
   });
 });
+
+describe('POST /api/items/:id/install', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-install-route-${Date.now()}`);
+  const claudeSkillsDir = path.join(os.tmpdir(), `skillvault-install-claude-skills-${Date.now()}`);
+  const claudeConfigPath = path.join(os.tmpdir(), `skillvault-install-claude-config-${Date.now()}.json`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(claudeSkillsDir, { recursive: true, force: true });
+    fs.rmSync(claudeConfigPath, { force: true });
+    // installMcpGlobally writes `${claudeConfigPath}.bak-<timestamp>` files
+    // alongside claudeConfigPath; clean those up too so a backup left behind
+    // by one test doesn't pollute another test's backup-count assertions.
+    for (const f of fs.readdirSync(path.dirname(claudeConfigPath))) {
+      if (f.startsWith(`${path.basename(claudeConfigPath)}.bak-`)) {
+        fs.rmSync(path.join(path.dirname(claudeConfigPath), f), { force: true });
+      }
+    }
+  });
+
+  function makeConfig() {
+    const config = loadConfig({
+      SKILLVAULT_HOME: home,
+      CLAUDE_SKILLS_DIR: claudeSkillsDir,
+      CLAUDE_CONFIG_PATH: claudeConfigPath,
+    } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    return config;
+  }
+
+  it('installs a skill by copying it into claudeSkillsDir', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const sourceDir = path.join(os.tmpdir(), `skillvault-install-skill-source-${Date.now()}`);
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(path.join(sourceDir, 'SKILL.md'), '# Minha Skill');
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'skill', name: 'Minha Skill', source_type: 'local_path', path: sourceDir },
+    });
+    const created = create.json();
+
+    const install = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(install.statusCode).toBe(200);
+    const installed = install.json();
+    expect(installed.installedGlobally).toBe(true);
+    const targetDir = path.join(claudeSkillsDir, path.basename(created.localPath));
+    expect(fs.existsSync(path.join(targetDir, 'SKILL.md'))).toBe(true);
+  });
+
+  it('installs an mcp by merging it into CLAUDE_CONFIG_PATH, backing up the original file first', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    fs.writeFileSync(claudeConfigPath, JSON.stringify({ theme: 'dark', mcpServers: { existing: { type: 'stdio' } } }));
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'mcp', name: 'novo-mcp', config: { type: 'http', url: 'https://example.com/mcp' } },
+    });
+    const created = create.json();
+
+    const install = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(install.statusCode).toBe(200);
+    expect(install.json().installedGlobally).toBe(true);
+
+    const finalConfig = JSON.parse(fs.readFileSync(claudeConfigPath, 'utf-8'));
+    expect(finalConfig.theme).toBe('dark');
+    expect(finalConfig.mcpServers.existing).toEqual({ type: 'stdio' });
+    expect(finalConfig.mcpServers['novo-mcp']).toEqual({ type: 'http', url: 'https://example.com/mcp' });
+
+    const backups = fs.readdirSync(path.dirname(claudeConfigPath)).filter((f) => f.startsWith(`${path.basename(claudeConfigPath)}.bak-`));
+    expect(backups.length).toBe(1);
+    const backupContent = JSON.parse(fs.readFileSync(path.join(path.dirname(claudeConfigPath), backups[0]), 'utf-8'));
+    expect(backupContent.mcpServers.existing).toEqual({ type: 'stdio' });
+    expect(backupContent.mcpServers['novo-mcp']).toBeUndefined();
+  });
+
+  it('returns 500 and writes nothing when CLAUDE_CONFIG_PATH has invalid JSON', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    fs.writeFileSync(claudeConfigPath, 'not valid json{{{');
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'mcp', name: 'outro-mcp', config: { type: 'http', url: 'https://example.com/mcp' } },
+    });
+    const created = create.json();
+
+    const install = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(install.statusCode).toBe(500);
+    expect(fs.readFileSync(claudeConfigPath, 'utf-8')).toBe('not valid json{{{');
+    const backups = fs.readdirSync(path.dirname(claudeConfigPath)).filter((f) => f.startsWith(`${path.basename(claudeConfigPath)}.bak-`));
+    expect(backups.length).toBe(0);
+  });
+
+  it('returns 409 when the mcp config has a redacted secret', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'mcp', name: 'mcp-com-segredo', config: { env: { API_KEY: 'sk_real_secret' } } },
+    });
+    const created = create.json();
+    expect(created.hasRedactedSecret).toBe(true);
+
+    const install = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(install.statusCode).toBe(409);
+    expect(fs.existsSync(claudeConfigPath)).toBe(false);
+  });
+
+  it('returns 409 when the item is already installed globally', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const sourceDir = path.join(os.tmpdir(), `skillvault-install-already-source-${Date.now()}`);
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(path.join(sourceDir, 'SKILL.md'), '# Já instalada');
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'skill', name: 'Ja Instalada', source_type: 'local_path', path: sourceDir },
+    });
+    const created = create.json();
+
+    await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+    const secondInstall = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(secondInstall.statusCode).toBe(409);
+  });
+
+  it('returns 409 for repo items (use /download instead)', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'repo', name: 'Repo Nao Instala', source_type: 'local_path', path: fixtureRepo },
+    });
+    const created = create.json();
+
+    const install = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(install.statusCode).toBe(409);
+  });
+
+  it('returns 404 for a nonexistent item', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const response = await app.inject({ method: 'POST', url: '/api/items/999/install' });
+
+    expect(response.statusCode).toBe(404);
+  });
+});

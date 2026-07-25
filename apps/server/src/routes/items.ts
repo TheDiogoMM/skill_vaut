@@ -14,6 +14,7 @@ import { ingestMcp } from '../ingestion/mcp.js';
 import { regenerateIndex } from '../index/generate.js';
 import { readItemContent } from '../content.js';
 import { computeGlobalStatus } from '../global-status.js';
+import { installSkillGlobally, installMcpGlobally } from '../ingestion/install.js';
 import type { Item } from '../types.js';
 
 // With @fastify/multipart's `attachFieldsToBody: true`, every plain field on a
@@ -246,6 +247,41 @@ export function itemsRoutes(config: SkillVaultConfig) {
       } catch (err) {
         return reply.status(422).send({ error: (err as Error).message });
       }
+    });
+
+    app.post('/api/items/:id/install', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const item = itemsRepo.getById(Number(id));
+      if (!item) return reply.status(404).send({ error: 'item not found' });
+      if (item.type === 'repo') return reply.status(409).send({ error: 'use /download for repo items' });
+
+      const globalStatus = computeGlobalStatus(config, item);
+      if (globalStatus.installedGlobally) {
+        return reply.status(409).send({ error: 'item is already installed globally' });
+      }
+      if (globalStatus.hasRedactedSecret) {
+        return reply
+          .status(409)
+          .send({ error: 'mcp config has a redacted secret; add it manually to CLAUDE_CONFIG_PATH' });
+      }
+
+      try {
+        if (item.type === 'skill') {
+          installSkillGlobally(config, item);
+        } else {
+          installMcpGlobally(config, item);
+        }
+      } catch (err) {
+        return reply.status(500).send({ error: (err as Error).message });
+      }
+
+      try {
+        regenerate();
+      } catch (err) {
+        app.log.error(err, 'failed to regenerate index after item install');
+      }
+
+      return withGlobalStatus(item);
     });
   };
 }
