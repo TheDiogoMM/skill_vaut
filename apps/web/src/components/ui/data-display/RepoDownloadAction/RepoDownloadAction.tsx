@@ -3,6 +3,7 @@ import type { Item } from '../../../../types.js';
 import { downloadItem } from '../../../../api/client.js';
 import { Button } from '../../core/Button/Button.js';
 import { StatusMessage } from '../../feedback/StatusMessage/StatusMessage.js';
+import { AvailabilityBadge } from '../AvailabilityBadge/AvailabilityBadge.js';
 
 export interface RepoDownloadActionProps {
   item: Item;
@@ -15,11 +16,19 @@ export function RepoDownloadAction({ item, onUpdated }: RepoDownloadActionProps)
   if (item.type !== 'repo' || !item.downloadStatus) return null;
 
   if (item.downloadStatus === 'local') {
-    return <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>Local</span>;
+    return (
+      <AvailabilityBadge tone="positive" icon="check-circle-2">
+        Local
+      </AvailabilityBadge>
+    );
   }
 
   if (item.downloadStatus === 'downloaded') {
-    return <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>Baixado</span>;
+    return (
+      <AvailabilityBadge tone="positive" icon="check-circle-2">
+        Baixado
+      </AvailabilityBadge>
+    );
   }
 
   async function handleDownload() {
