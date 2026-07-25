@@ -52,6 +52,10 @@ export function downloadItem(id: number): Promise<Item> {
   return request<Item>(`/api/items/${id}/download`, { method: 'POST' });
 }
 
+export function installItem(id: number): Promise<Item> {
+  return request<Item>(`/api/items/${id}/install`, { method: 'POST' });
+}
+
 export interface CreateRepoInput {
   type: 'repo';
   name: string;

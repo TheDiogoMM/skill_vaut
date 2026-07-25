@@ -24,6 +24,8 @@ export interface Item {
   enrichmentSource: EnrichmentSource | null;
   globalInstallStatus: GlobalInstallStatus | null;
   downloadStatus: DownloadStatus | null;
+  installedGlobally: boolean | null;
+  hasRedactedSecret: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
