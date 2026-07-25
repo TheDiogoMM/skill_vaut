@@ -23,7 +23,7 @@ export function isMcpInstalledGlobally(config: ClaudeLocations, item: Item): boo
 export function mcpHasRedactedSecret(item: Item): boolean {
   try {
     const raw = fs.readFileSync(item.localPath, 'utf-8');
-    return raw.includes('<REDACTED>');
+    return raw.includes('REDACTED');
   } catch {
     return false;
   }

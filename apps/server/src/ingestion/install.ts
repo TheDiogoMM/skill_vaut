@@ -12,7 +12,7 @@ export function installSkillGlobally(config: SkillVaultConfig, item: Item): void
 export function installMcpGlobally(config: SkillVaultConfig, item: Item): void {
   const mcpConfig = JSON.parse(fs.readFileSync(item.localPath, 'utf-8'));
 
-  if (JSON.stringify(mcpConfig).includes('<REDACTED>')) {
+  if (JSON.stringify(mcpConfig).includes('REDACTED')) {
     throw new Error('refusing to install an mcp config that contains a redacted secret');
   }
 

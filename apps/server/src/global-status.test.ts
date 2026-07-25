@@ -101,6 +101,12 @@ describe('mcpHasRedactedSecret', () => {
     const item = sampleItem({ type: 'mcp', localPath: mcpFilePath });
     expect(mcpHasRedactedSecret(item)).toBe(false);
   });
+
+  it('returns true when the file contains a URL-encoded redacted placeholder (%3CREDACTED%3E)', () => {
+    fs.writeFileSync(mcpFilePath, JSON.stringify({ type: 'http', url: 'https://example.com/api?apiKey=%3CREDACTED%3E' }));
+    const item = sampleItem({ type: 'mcp', localPath: mcpFilePath });
+    expect(mcpHasRedactedSecret(item)).toBe(true);
+  });
 });
 
 describe('computeGlobalStatus', () => {
