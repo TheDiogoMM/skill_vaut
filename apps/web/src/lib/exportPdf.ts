@@ -44,19 +44,29 @@ export function buildPdf(rows: ExportRow[]): jsPDF {
     for (const row of byCategory.get(category)!) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(NAME_SIZE);
+      const nameLines = doc.splitTextToSize(row.name, contentWidth) as string[];
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(BODY_SIZE);
+      const linkLines = doc.splitTextToSize(row.link, contentWidth) as string[];
       const descriptionLines = doc.splitTextToSize(row.description, contentWidth) as string[];
-      const blockHeight = LINE_HEIGHT * 2 + descriptionLines.length * (LINE_HEIGHT * 0.8);
+
+      const blockHeight =
+        nameLines.length * (LINE_HEIGHT * 0.9) +
+        linkLines.length * (LINE_HEIGHT * 0.8) +
+        descriptionLines.length * (LINE_HEIGHT * 0.8) +
+        LINE_HEIGHT * 0.5;
       ensureSpace(blockHeight);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(NAME_SIZE);
-      doc.text(row.name, PAGE_MARGIN, y);
-      y += LINE_HEIGHT * 0.9;
+      doc.text(nameLines, PAGE_MARGIN, y);
+      y += nameLines.length * (LINE_HEIGHT * 0.9);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(BODY_SIZE);
-      doc.text(row.link, PAGE_MARGIN, y);
-      y += LINE_HEIGHT * 0.8;
+      doc.text(linkLines, PAGE_MARGIN, y);
+      y += linkLines.length * (LINE_HEIGHT * 0.8);
 
       doc.text(descriptionLines, PAGE_MARGIN, y);
       y += descriptionLines.length * (LINE_HEIGHT * 0.8) + LINE_HEIGHT * 0.5;

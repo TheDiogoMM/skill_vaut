@@ -21,4 +21,24 @@ describe('buildPdf', () => {
     const doc = buildPdf(manyRows(60));
     expect(doc.getNumberOfPages()).toBeGreaterThan(1);
   });
+
+  it('wraps long local-path-style links and names instead of clipping them off the page', () => {
+    const longPath = 'C:/Users/Diogo/Projetos/'.repeat(10) + 'arquivo-com-nome-bem-longo.psd';
+    const longName = 'Nome de item extremamente longo '.repeat(8).trim();
+    const rows: ExportRow[] = [
+      {
+        category: 'dev-tools',
+        name: longName,
+        link: longPath,
+        description: 'Descrição curta.',
+      },
+    ];
+
+    expect(() => buildPdf(rows)).not.toThrow();
+    const doc = buildPdf(rows);
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+
+    const splitLines = doc.splitTextToSize(longPath, 180) as string[];
+    expect(splitLines.length).toBeGreaterThan(1);
+  });
 });
