@@ -59,6 +59,14 @@ describe('buildExportRows', () => {
     const [withoutCategory] = buildExportRows([sampleItem({ categoryId: null })], [category]);
     expect(withoutCategory.category).toBe('Sem categoria');
   });
+
+  it('recognizes SSH-style git remotes (git@host:owner/repo.git) as a real link, not falling back to localPath', () => {
+    const rows = buildExportRows(
+      [sampleItem({ sourceValue: 'git@github.com:owner/repo.git', localPath: '/local/vault-copy' })],
+      []
+    );
+    expect(rows[0].link).toBe('git@github.com:owner/repo.git');
+  });
 });
 
 describe('renderExportMarkdown', () => {

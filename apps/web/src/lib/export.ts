@@ -8,7 +8,8 @@ export interface ExportRow {
 }
 
 function resolveLink(item: Item): string {
-  return /^https?:\/\//i.test(item.sourceValue) ? item.sourceValue : item.localPath;
+  const looksLikeUrl = /^(https?|ssh):\/\//i.test(item.sourceValue) || /^git@[^:]+:/i.test(item.sourceValue);
+  return looksLikeUrl ? item.sourceValue : item.localPath;
 }
 
 function resolveDescription(item: Item): string {
