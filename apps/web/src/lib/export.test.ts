@@ -86,4 +86,12 @@ describe('renderExportMarkdown', () => {
     expect(md).toContain('- **Item B** — Descrição B');
     expect(md).toContain('Link: https://example.com/b');
   });
+
+  it('escapes Markdown special characters in name and description', () => {
+    const md = renderExportMarkdown([
+      { category: 'dev-tools', name: '`rm -rf` tool', link: '/local/a', description: 'Uses *bold* and _italic_ and [links]' },
+    ]);
+
+    expect(md).toContain('- **\\`rm -rf\\` tool** — Uses \\*bold\\* and \\_italic\\_ and \\[links\\]');
+  });
 });

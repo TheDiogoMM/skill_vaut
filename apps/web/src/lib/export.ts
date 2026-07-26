@@ -16,6 +16,10 @@ function resolveDescription(item: Item): string {
   return item.summary || item.utility || 'sem descrição';
 }
 
+function escapeMarkdown(text: string): string {
+  return text.replace(/[*_`[\]]/g, '\\$&');
+}
+
 export function buildExportRows(items: Item[], categories: Category[]): ExportRow[] {
   const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
   return items.map((item) => ({
@@ -39,7 +43,7 @@ export function renderExportMarkdown(rows: ExportRow[]): string {
     for (const row of categoryRows) {
       const isUrl = /^https?:\/\//i.test(row.link);
       const linkText = isUrl ? row.link : `\`${row.link}\``;
-      lines.push(`- **${row.name}** — ${row.description}`);
+      lines.push(`- **${escapeMarkdown(row.name)}** — ${escapeMarkdown(row.description)}`);
       lines.push(`  Link: ${linkText}`);
     }
     lines.push('');
