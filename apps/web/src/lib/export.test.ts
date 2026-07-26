@@ -70,8 +70,8 @@ describe('renderExportMarkdown', () => {
 
     const devToolsIndex = md.indexOf('## dev-tools');
     const designIndex = md.indexOf('## design');
-    expect(devToolsIndex).toBeGreaterThanOrEqual(0);
-    expect(designIndex).toBeGreaterThan(devToolsIndex);
+    expect(designIndex).toBeGreaterThanOrEqual(0);
+    expect(devToolsIndex).toBeGreaterThan(designIndex);
 
     expect(md).toContain('- **Item A** — Descrição A');
     expect(md).toContain('Link: `/local/a`');

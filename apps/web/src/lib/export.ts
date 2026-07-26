@@ -33,7 +33,7 @@ export function renderExportMarkdown(rows: ExportRow[]): string {
   }
 
   const lines: string[] = ['# SkillVault — Catálogo', ''];
-  for (const [category, categoryRows] of [...byCategory.entries()].sort((a, b) => b[0].localeCompare(a[0]))) {
+  for (const [category, categoryRows] of [...byCategory.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
     lines.push(`## ${category}`, '');
     for (const row of categoryRows) {
       const isUrl = /^https?:\/\//i.test(row.link);
