@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { listItems, listCategories } from '../api/client.js';
 import { SearchFilterBar, type Filters } from '../components/SearchFilterBar.js';
 import { CategoryManager } from '../components/CategoryManager.js';
+import { ExportButtons } from '../components/ExportButtons.js';
 import { ItemCard } from '../components/ui/data-display/ItemCard/ItemCard.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 import type { Category, Item, ItemFilters } from '../types.js';
@@ -87,6 +88,7 @@ export function CatalogPage() {
         Catálogo
       </h1>
       <SearchFilterBar categories={categories} onChange={setFilters} />
+      <ExportButtons items={items} categories={categories} disabled={status !== 'ready' || items.length === 0} />
       {status === 'loading' && <p>Carregando catálogo...</p>}
       {status === 'error' && <StatusMessage kind="error">Não foi possível carregar o catálogo.</StatusMessage>}
       {status === 'ready' && items.length === 0 && <p>Nenhum item cadastrado ainda.</p>}

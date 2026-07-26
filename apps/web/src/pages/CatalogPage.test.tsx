@@ -163,4 +163,32 @@ describe('CatalogPage', () => {
     expect(screen.queryByRole('button', { name: 'Baixar' })).not.toBeInTheDocument();
     expect(listItemsSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('shows the export buttons once the catalog has loaded', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([sampleItem()]);
+    vi.spyOn(api, 'listCategories').mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('button', { name: 'Baixar .md' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Baixar .pdf' })).toBeInTheDocument();
+  });
+
+  it('disables the export buttons while the catalog is empty', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([]);
+    vi.spyOn(api, 'listCategories').mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Nenhum item cadastrado ainda.');
+    expect(screen.getByRole('button', { name: 'Baixar .md' })).toBeDisabled();
+  });
 });
