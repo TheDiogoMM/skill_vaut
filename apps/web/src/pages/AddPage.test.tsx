@@ -64,6 +64,18 @@ describe('AddPage', () => {
     expect(screen.getByLabelText('Config JSON (ex: bloco mcpServers)')).toHaveValue('');
   });
 
+  it('shows the skill form when type=skill is in the query params, pre-filled on the URL tab', () => {
+    render(
+      <MemoryRouter initialEntries={['/add?type=skill&name=Skill+Achada&url=https%3A%2F%2Fexample.com%2Fskill.git']}>
+        <AddPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByLabelText('Nome')).toHaveValue('Skill Achada');
+    expect(screen.getByRole('tab', { name: 'URL', selected: true })).toBeInTheDocument();
+    expect(screen.getByLabelText('URL do repositório da skill')).toHaveValue('https://example.com/skill.git');
+  });
+
   it('falls back to type=repo when no query params are present', () => {
     render(
       <MemoryRouter>

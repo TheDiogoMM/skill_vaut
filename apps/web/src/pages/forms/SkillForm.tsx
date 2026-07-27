@@ -8,6 +8,8 @@ import { StatusMessage } from '../../components/ui/feedback/StatusMessage/Status
 
 interface SkillFormProps {
   onCreated: (item: Item) => void;
+  initialName?: string;
+  initialUrl?: string;
 }
 
 type SourceTab = 'local_path' | 'upload' | 'url';
@@ -18,11 +20,11 @@ const TABS: { value: SourceTab; label: string }[] = [
   { value: 'url', label: 'URL' },
 ];
 
-export function SkillForm({ onCreated }: SkillFormProps) {
-  const [name, setName] = useState('');
-  const [tab, setTab] = useState<SourceTab>('local_path');
+export function SkillForm({ onCreated, initialName = '', initialUrl = '' }: SkillFormProps) {
+  const [name, setName] = useState(initialName);
+  const [tab, setTab] = useState<SourceTab>(initialUrl ? 'url' : 'local_path');
   const [localPath, setLocalPath] = useState('');
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(initialUrl);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
   const [error, setError] = useState('');

@@ -113,4 +113,18 @@ describe('SkillForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Selecione um arquivo para enviar.');
     expect(createItemSpy).not.toHaveBeenCalled();
   });
+
+  it('pre-fills name and url and switches to the URL tab when initialUrl is provided', () => {
+    render(<SkillForm onCreated={vi.fn()} initialName="Skill Pronta" initialUrl="https://example.com/pronta.git" />);
+
+    expect(screen.getByLabelText('Nome')).toHaveValue('Skill Pronta');
+    expect(screen.getByRole('tab', { name: 'URL', selected: true })).toBeInTheDocument();
+    expect(screen.getByLabelText('URL do repositório da skill')).toHaveValue('https://example.com/pronta.git');
+  });
+
+  it('defaults to the local_path tab when no initialUrl is provided', () => {
+    render(<SkillForm onCreated={vi.fn()} />);
+
+    expect(screen.getByRole('tab', { name: 'Caminho local', selected: true })).toBeInTheDocument();
+  });
 });

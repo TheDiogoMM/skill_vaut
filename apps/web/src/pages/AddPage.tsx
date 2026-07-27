@@ -53,7 +53,7 @@ export function AddPage() {
       </Select>
 
       {type === 'repo' && <RepoForm onCreated={handleCreated} initialName={initialName} initialUrl={initialUrl} />}
-      {type === 'skill' && <SkillForm onCreated={handleCreated} />}
+      {type === 'skill' && <SkillForm onCreated={handleCreated} initialName={initialName} initialUrl={initialUrl} />}
       {type === 'mcp' && <McpForm onCreated={handleCreated} initialName={initialName} />}
       {type === 'plugin' && <PluginForm onCreated={handleCreated} initialName={initialName} initialUrl={initialUrl} />}
     </div>
