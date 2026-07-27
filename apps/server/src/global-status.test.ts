@@ -115,12 +115,45 @@ describe('computeGlobalStatus', () => {
     expect(computeGlobalStatus({ claudeSkillsDir: '/nonexistent', claudeConfigPath: '/nonexistent' }, item)).toEqual({
       installedGlobally: null,
       hasRedactedSecret: null,
+      installedPath: null,
     });
   });
 
-  it('returns installedGlobally=false and hasRedactedSecret=null for a skill not yet installed', () => {
+  it('returns installedGlobally=false, hasRedactedSecret=null and installedPath=null for a skill not yet installed', () => {
     const item = sampleItem({ type: 'skill', localPath: '/nonexistent-skill-path' });
     const status = computeGlobalStatus({ claudeSkillsDir: '/nonexistent', claudeConfigPath: '/nonexistent' }, item);
-    expect(status).toEqual({ installedGlobally: false, hasRedactedSecret: null });
+    expect(status).toEqual({ installedGlobally: false, hasRedactedSecret: null, installedPath: null });
+  });
+
+  it('returns installedPath pointing at claudeSkillsDir/<basename> for an installed skill', () => {
+    const claudeSkillsDir = path.join(os.tmpdir(), `skillvault-global-status-installpath-${Date.now()}`);
+    fs.mkdirSync(path.join(claudeSkillsDir, 'my-skill'), { recursive: true });
+    const item = sampleItem({ type: 'skill', localPath: '/wherever/my-skill' });
+
+    const status = computeGlobalStatus({ claudeSkillsDir, claudeConfigPath: '/nonexistent' }, item);
+
+    expect(status.installedGlobally).toBe(true);
+    expect(status.installedPath).toBe(path.join(claudeSkillsDir, 'my-skill'));
+
+    fs.rmSync(claudeSkillsDir, { recursive: true, force: true });
+  });
+
+  it('returns installedPath equal to claudeConfigPath for an installed mcp', () => {
+    const claudeConfigPath = path.join(os.tmpdir(), `skillvault-global-status-installpath-mcp-${Date.now()}.json`);
+    fs.writeFileSync(claudeConfigPath, JSON.stringify({ mcpServers: { stripe: {} } }));
+    const item = sampleItem({ type: 'mcp', name: 'stripe' });
+
+    const status = computeGlobalStatus({ claudeSkillsDir: '/nonexistent', claudeConfigPath }, item);
+
+    expect(status.installedGlobally).toBe(true);
+    expect(status.installedPath).toBe(claudeConfigPath);
+
+    fs.rmSync(claudeConfigPath, { force: true });
+  });
+
+  it('returns installedPath=null for an mcp not yet installed', () => {
+    const item = sampleItem({ type: 'mcp', name: 'stripe' });
+    const status = computeGlobalStatus({ claudeSkillsDir: '/nonexistent', claudeConfigPath: '/nonexistent' }, item);
+    expect(status.installedPath).toBeNull();
   });
 });

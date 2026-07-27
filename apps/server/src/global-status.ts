@@ -32,17 +32,25 @@ export function mcpHasRedactedSecret(item: Item): boolean {
 export interface GlobalStatus {
   installedGlobally: boolean | null;
   hasRedactedSecret: boolean | null;
+  installedPath: string | null;
 }
 
 export function computeGlobalStatus(config: ClaudeLocations, item: Item): GlobalStatus {
   if (item.type === 'skill') {
-    return { installedGlobally: isSkillInstalledGlobally(config, item), hasRedactedSecret: null };
-  }
-  if (item.type === 'mcp') {
+    const installed = isSkillInstalledGlobally(config, item);
     return {
-      installedGlobally: isMcpInstalledGlobally(config, item),
-      hasRedactedSecret: mcpHasRedactedSecret(item),
+      installedGlobally: installed,
+      hasRedactedSecret: null,
+      installedPath: installed ? path.join(config.claudeSkillsDir, path.basename(item.localPath)) : null,
     };
   }
-  return { installedGlobally: null, hasRedactedSecret: null };
+  if (item.type === 'mcp') {
+    const installed = isMcpInstalledGlobally(config, item);
+    return {
+      installedGlobally: installed,
+      hasRedactedSecret: mcpHasRedactedSecret(item),
+      installedPath: installed ? config.claudeConfigPath : null,
+    };
+  }
+  return { installedGlobally: null, hasRedactedSecret: null, installedPath: null };
 }
