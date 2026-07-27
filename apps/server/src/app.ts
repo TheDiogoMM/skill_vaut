@@ -10,6 +10,7 @@ import { categoriesRoutes } from './routes/categories.js';
 import { itemsRoutes } from './routes/items.js';
 import { indexRoute } from './routes/indexRoute.js';
 import { recommendRoutes } from './routes/recommend.js';
+import { discoverRoutes } from './routes/discover.js';
 
 const defaultWebDistPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -32,6 +33,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.register(itemsRoutes(options.config));
   app.register(indexRoute(options.config));
   app.register(recommendRoutes(options.config));
+  app.register(discoverRoutes(options.config));
 
   const webDistPath = options.webDistPath ?? defaultWebDistPath;
   const indexHtmlPath = path.join(webDistPath, 'index.html');
