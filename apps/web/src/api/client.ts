@@ -62,6 +62,12 @@ export interface CreateRepoInput {
   url: string;
 }
 
+export interface CreatePluginInput {
+  type: 'plugin';
+  name: string;
+  url: string;
+}
+
 export interface CreateMcpInput {
   type: 'mcp';
   name: string;
@@ -74,7 +80,7 @@ export type CreateSkillInput =
   | { type: 'skill'; name: string; source_type: 'url'; url: string }
   | { type: 'skill'; name: string; source_type: 'upload'; file: File };
 
-export type CreateItemInput = CreateRepoInput | CreateMcpInput | CreateSkillInput;
+export type CreateItemInput = CreateRepoInput | CreateMcpInput | CreateSkillInput | CreatePluginInput;
 
 export function createItem(input: CreateItemInput): Promise<Item> {
   if (input.type === 'skill' && input.source_type === 'upload') {
