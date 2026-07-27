@@ -17,6 +17,7 @@ function migrateItemsTypeCheck(db: Database.Database): void {
   if (itemsTypeCheckAllowsPlugin(db)) return;
 
   db.exec(`
+    BEGIN TRANSACTION;
     ALTER TABLE items RENAME TO items_old_type_check;
     CREATE TABLE items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +47,7 @@ function migrateItemsTypeCheck(db: Database.Database): void {
       created_at, updated_at
     FROM items_old_type_check;
     DROP TABLE items_old_type_check;
+    COMMIT;
   `);
 }
 
