@@ -8,10 +8,11 @@ import { StatusMessage } from '../../components/ui/feedback/StatusMessage/Status
 
 interface McpFormProps {
   onCreated: (item: Item) => void;
+  initialName?: string;
 }
 
-export function McpForm({ onCreated }: McpFormProps) {
-  const [name, setName] = useState('');
+export function McpForm({ onCreated, initialName = '' }: McpFormProps) {
+  const [name, setName] = useState(initialName);
   const [description, setDescription] = useState('');
   const [configText, setConfigText] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
