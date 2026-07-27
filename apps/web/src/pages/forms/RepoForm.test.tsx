@@ -43,4 +43,11 @@ describe('RepoForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('url is required for type=repo');
   });
+
+  it('pre-fills name and url from initialName/initialUrl props', () => {
+    render(<RepoForm onCreated={vi.fn()} initialName="Repo Pronto" initialUrl="https://example.com/pronto.git" />);
+
+    expect(screen.getByLabelText('Nome')).toHaveValue('Repo Pronto');
+    expect(screen.getByLabelText('URL do repositório')).toHaveValue('https://example.com/pronto.git');
+  });
 });

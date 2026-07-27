@@ -7,11 +7,13 @@ import { StatusMessage } from '../../components/ui/feedback/StatusMessage/Status
 
 interface RepoFormProps {
   onCreated: (item: Item) => void;
+  initialName?: string;
+  initialUrl?: string;
 }
 
-export function RepoForm({ onCreated }: RepoFormProps) {
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
+export function RepoForm({ onCreated, initialName = '', initialUrl = '' }: RepoFormProps) {
+  const [name, setName] = useState(initialName);
+  const [url, setUrl] = useState(initialUrl);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
   const [error, setError] = useState('');
 
