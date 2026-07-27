@@ -24,4 +24,9 @@ describe('Icon', () => {
     const { container } = render(<Icon name="wand-2" />);
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
+
+  it('renders the compass icon', () => {
+    const { container } = render(<Icon name="compass" />);
+    expect(container.querySelector('svg')).toBeInTheDocument();
+  });
 });
