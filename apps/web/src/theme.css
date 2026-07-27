@@ -7,6 +7,7 @@
   --violet-500: #a78bfa;
   --green-500: #34d399;
   --amber-500: #f5a623;
+  --pink-500: #ec4899;
   --red-400: #f87171;
   --red-500: #ef4444;
   --gray-950: #0b0d12;
@@ -44,6 +45,8 @@
   --color-type-repo-bg: color-mix(in oklch, var(--green-500) 16%, var(--color-surface));
   --color-type-mcp: var(--amber-500);
   --color-type-mcp-bg: color-mix(in oklch, var(--amber-500) 18%, var(--color-surface));
+  --color-type-plugin: var(--pink-500);
+  --color-type-plugin-bg: color-mix(in oklch, var(--pink-500) 18%, var(--color-surface));
 
   --focus-ring: 0 0 0 3px color-mix(in oklch, var(--color-accent) 45%, transparent);
 
@@ -97,6 +100,7 @@
   --color-type-skill-bg: color-mix(in oklch, var(--violet-500) 12%, white);
   --color-type-repo-bg: color-mix(in oklch, var(--green-500) 12%, white);
   --color-type-mcp-bg: color-mix(in oklch, var(--amber-500) 14%, white);
+  --color-type-plugin-bg: color-mix(in oklch, var(--pink-500) 14%, white);
   --shadow-sm: 0 1px 2px rgba(20, 22, 26, 0.08);
 }
 

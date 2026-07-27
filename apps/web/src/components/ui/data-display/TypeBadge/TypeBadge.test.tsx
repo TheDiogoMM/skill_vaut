@@ -17,4 +17,9 @@ describe('TypeBadge', () => {
     render(<TypeBadge type="mcp" />);
     expect(screen.getByText('MCP')).toBeInTheDocument();
   });
+
+  it('renders the Plugin label', () => {
+    render(<TypeBadge type="plugin" />);
+    expect(screen.getByText('Plugin')).toBeInTheDocument();
+  });
 });

@@ -1,10 +1,12 @@
 import type { SVGProps } from 'react';
-import { Sparkles, GitBranch, Plug, CheckCircle2, AlertCircle, Info, Copy, Check, Library, PlusCircle, Sun, Moon, Wand2 } from 'lucide-react';
+import { Sparkles, GitBranch, Plug, Puzzle, Compass, CheckCircle2, AlertCircle, Info, Copy, Check, Library, PlusCircle, Sun, Moon, Wand2 } from 'lucide-react';
 
 const ICONS = {
   sparkles: Sparkles,
   'git-branch': GitBranch,
   plug: Plug,
+  puzzle: Puzzle,
+  compass: Compass,
   'check-circle-2': CheckCircle2,
   'alert-circle': AlertCircle,
   info: Info,

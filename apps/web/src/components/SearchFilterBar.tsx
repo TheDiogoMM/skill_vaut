@@ -44,6 +44,7 @@ export function SearchFilterBar({ categories, onChange }: SearchFilterBarProps) 
         <option value="skill">Skill</option>
         <option value="repo">Repo</option>
         <option value="mcp">MCP</option>
+        <option value="plugin">Plugin</option>
       </Select>
       <Select
         aria-label="Categoria"

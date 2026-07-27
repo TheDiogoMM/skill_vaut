@@ -12,6 +12,7 @@ const CONFIG: Record<ItemType, TypeBadgeConfig> = {
   skill: { label: 'Skill', color: 'var(--color-type-skill)', bg: 'var(--color-type-skill-bg)', icon: 'sparkles' },
   repo: { label: 'Repo', color: 'var(--color-type-repo)', bg: 'var(--color-type-repo-bg)', icon: 'git-branch' },
   mcp: { label: 'MCP', color: 'var(--color-type-mcp)', bg: 'var(--color-type-mcp-bg)', icon: 'plug' },
+  plugin: { label: 'Plugin', color: 'var(--color-type-plugin)', bg: 'var(--color-type-plugin-bg)', icon: 'puzzle' },
 };
 
 export interface TypeBadgeProps {
