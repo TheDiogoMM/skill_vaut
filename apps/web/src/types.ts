@@ -26,6 +26,7 @@ export interface Item {
   downloadStatus: DownloadStatus | null;
   installedGlobally: boolean | null;
   hasRedactedSecret: boolean | null;
+  installedPath: string | null;
   createdAt: string;
   updatedAt: string;
 }

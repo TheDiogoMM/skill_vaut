@@ -21,6 +21,7 @@ function sampleItem(overrides: Partial<Item> = {}): Item {
     downloadStatus: null,
     installedGlobally: false,
     hasRedactedSecret: null,
+    installedPath: null,
     createdAt: '',
     updatedAt: '',
     ...overrides,

@@ -31,6 +31,7 @@ function sampleDetail(overrides: Partial<ItemDetail> = {}): ItemDetail {
     downloadStatus: null,
     installedGlobally: null,
     hasRedactedSecret: null,
+    installedPath: null,
     createdAt: '',
     updatedAt: '',
     content: '',
