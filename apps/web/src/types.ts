@@ -1,4 +1,4 @@
-export type ItemType = 'skill' | 'repo' | 'mcp';
+export type ItemType = 'skill' | 'repo' | 'mcp' | 'plugin';
 export type SourceType = 'local_path' | 'upload' | 'url' | 'manual';
 export type EnrichmentSource = 'ollama' | 'gemini' | 'manual';
 export type GlobalInstallStatus = 'success' | 'failed';

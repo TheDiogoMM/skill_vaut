@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE TABLE IF NOT EXISTS items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL CHECK (type IN ('skill','repo','mcp')),
+  type TEXT NOT NULL CHECK (type IN ('skill','repo','mcp','plugin')),
   name TEXT NOT NULL,
   source_type TEXT NOT NULL CHECK (source_type IN ('local_path','upload','url','manual')),
   source_value TEXT NOT NULL,
