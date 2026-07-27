@@ -3,11 +3,12 @@ import { parseRecommendJson } from './parse.js';
 
 describe('parseRecommendJson', () => {
   it('extracts a valid JSON block surrounded by prose', () => {
-    const raw = `Aqui está:\n{"skills":[{"id":1,"motivo":"Serve para X"}],"repos":[],"mcps":[{"id":5,"motivo":"Y"}]}\nFim.`;
+    const raw = `Aqui está:\n{"skills":[{"id":1,"motivo":"Serve para X"}],"repos":[],"mcps":[{"id":5,"motivo":"Y"}],"plugins":[]}\nFim.`;
     expect(parseRecommendJson(raw)).toEqual({
       skills: [{ id: 1, motivo: 'Serve para X' }],
       repos: [],
       mcps: [{ id: 5, motivo: 'Y' }],
+      plugins: [],
     });
   });
 
@@ -16,14 +17,18 @@ describe('parseRecommendJson', () => {
   });
 
   it('returns null when a list entry is missing motivo', () => {
-    expect(parseRecommendJson('{"skills":[{"id":1}],"repos":[],"mcps":[]}')).toBeNull();
+    expect(parseRecommendJson('{"skills":[{"id":1}],"repos":[],"mcps":[],"plugins":[]}')).toBeNull();
   });
 
   it('returns null when a required array is missing', () => {
-    expect(parseRecommendJson('{"skills":[],"repos":[]}')).toBeNull();
+    expect(parseRecommendJson('{"skills":[],"repos":[],"plugins":[]}')).toBeNull();
+  });
+
+  it('returns null when plugins is missing', () => {
+    expect(parseRecommendJson('{"skills":[],"repos":[],"mcps":[]}')).toBeNull();
   });
 
   it('returns null when id is not a number', () => {
-    expect(parseRecommendJson('{"skills":[{"id":"1","motivo":"x"}],"repos":[],"mcps":[]}')).toBeNull();
+    expect(parseRecommendJson('{"skills":[{"id":"1","motivo":"x"}],"repos":[],"mcps":[],"plugins":[]}')).toBeNull();
   });
 });

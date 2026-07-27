@@ -50,4 +50,5 @@ export interface RecommendResult {
   skills: RecommendedItem[];
   repos: RecommendedItem[];
   mcps: RecommendedItem[];
+  plugins: RecommendedItem[];
 }

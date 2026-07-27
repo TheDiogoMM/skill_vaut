@@ -47,7 +47,7 @@ export async function getRecommendations(
 ): Promise<RecommendResult | null> {
   const allItems = itemsRepo.list();
   if (allItems.length === 0) {
-    return { skills: [], repos: [], mcps: [] };
+    return { skills: [], repos: [], mcps: [], plugins: [] };
   }
 
   const categoryNameById = new Map(categoriesRepo.list().map((c) => [c.id, c.name]));
@@ -68,5 +68,6 @@ export async function getRecommendations(
     skills: resolveList(parsed.skills, 'skill', itemsRepo, config),
     repos: resolveList(parsed.repos, 'repo', itemsRepo, config),
     mcps: resolveList(parsed.mcps, 'mcp', itemsRepo, config),
+    plugins: resolveList(parsed.plugins, 'plugin', itemsRepo, config),
   };
 }

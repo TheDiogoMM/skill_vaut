@@ -48,7 +48,7 @@ describe('getRecommendations', () => {
     }) as typeof fetch;
 
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'ideia', fetchImpl);
-    expect(result).toEqual({ skills: [], repos: [], mcps: [] });
+    expect(result).toEqual({ skills: [], repos: [], mcps: [], plugins: [] });
   });
 
   it('resolves ids from the Ollama response into full items, discarding unknown ids and wrong-type ids', async () => {
@@ -64,6 +64,7 @@ describe('getRecommendations', () => {
       ],
       repos: [{ id: repoItem.id, motivo: 'Bom ponto de partida' }],
       mcps: [],
+      plugins: [],
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
@@ -89,6 +90,7 @@ describe('getRecommendations', () => {
       ],
       repos: [],
       mcps: [],
+      plugins: [],
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
@@ -107,6 +109,7 @@ describe('getRecommendations', () => {
       skills: [{ id: skill.id, motivo: 'Ajuda a extrair texto de PDFs' }],
       repos: [],
       mcps: [],
+      plugins: [],
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
@@ -122,7 +125,7 @@ describe('getRecommendations', () => {
   it('falls back to Gemini when Ollama fails', async () => {
     const skill = itemsRepo.create(baseNewItem());
     const config = loadConfig({ GEMINI_API_KEY: 'key' } as NodeJS.ProcessEnv);
-    const raw = JSON.stringify({ skills: [{ id: skill.id, motivo: 'via gemini' }], repos: [], mcps: [] });
+    const raw = JSON.stringify({ skills: [{ id: skill.id, motivo: 'via gemini' }], repos: [], mcps: [], plugins: [] });
     const fetchImpl = (async (url: string) => {
       if (url.includes('generativelanguage')) {
         return fakeResponse({ candidates: [{ content: { parts: [{ text: raw }] } }] });
@@ -141,5 +144,24 @@ describe('getRecommendations', () => {
 
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'ideia', fetchImpl);
     expect(result).toBeNull();
+  });
+
+  it('resolves plugin ids into full items, same as the other three buckets', async () => {
+    const plugin = itemsRepo.create(baseNewItem({ type: 'plugin', name: 'My Plugin' }));
+
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const raw = JSON.stringify({
+      skills: [],
+      repos: [],
+      mcps: [],
+      plugins: [{ id: plugin.id, motivo: 'Resolve isso' }],
+    });
+    const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
+
+    const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'ideia', fetchImpl);
+
+    expect(result?.plugins).toEqual([
+      { ...plugin, installedGlobally: null, hasRedactedSecret: null, motivo: 'Resolve isso' },
+    ]);
   });
 });

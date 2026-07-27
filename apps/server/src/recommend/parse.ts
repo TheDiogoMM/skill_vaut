@@ -7,6 +7,7 @@ export interface ParsedRecommendResult {
   skills: ParsedRecommendation[];
   repos: ParsedRecommendation[];
   mcps: ParsedRecommendation[];
+  plugins: ParsedRecommendation[];
 }
 
 function parseList(value: unknown): ParsedRecommendation[] | null {
@@ -31,8 +32,9 @@ export function parseRecommendJson(raw: string): ParsedRecommendResult | null {
     const skills = parseList(parsed.skills);
     const repos = parseList(parsed.repos);
     const mcps = parseList(parsed.mcps);
-    if (!skills || !repos || !mcps) return null;
-    return { skills, repos, mcps };
+    const plugins = parseList(parsed.plugins);
+    if (!skills || !repos || !mcps || !plugins) return null;
+    return { skills, repos, mcps, plugins };
   } catch {
     return null;
   }

@@ -18,7 +18,7 @@ export function buildRecommendPrompt(ideia: string, catalog: CatalogItemForPromp
     )
     .join('\n');
 
-  return `Você é um assistente que recomenda itens de um catálogo pessoal de skills, repositórios de código e MCPs (Model Context Protocol servers) para uma ideia de projeto.
+  return `Você é um assistente que recomenda itens de um catálogo pessoal de skills, repositórios de código, MCPs (Model Context Protocol servers) e plugins do Claude Code para uma ideia de projeto.
 
 Ideia do usuário: "${ideia}"
 
@@ -26,7 +26,7 @@ Catálogo disponível (só pode recomendar itens desta lista, citando o id exato
 ${catalogLines || '(catálogo vazio)'}
 
 Responda APENAS com um JSON no formato:
-{"skills": [{"id": N, "motivo": "por que esse item ajuda nessa ideia"}], "repos": [...], "mcps": [...]}
+{"skills": [{"id": N, "motivo": "por que esse item ajuda nessa ideia"}], "repos": [...], "mcps": [...], "plugins": [...]}
 
 Cite apenas ids que aparecem na lista acima. Se nada do catálogo servir para um tipo, retorne um array vazio para esse tipo.`;
 }
@@ -50,6 +50,7 @@ export const RECOMMEND_JSON_SCHEMA = {
     skills: RECOMMENDATION_LIST_SCHEMA,
     repos: RECOMMENDATION_LIST_SCHEMA,
     mcps: RECOMMENDATION_LIST_SCHEMA,
+    plugins: RECOMMENDATION_LIST_SCHEMA,
   },
-  required: ['skills', 'repos', 'mcps'],
+  required: ['skills', 'repos', 'mcps', 'plugins'],
 };
