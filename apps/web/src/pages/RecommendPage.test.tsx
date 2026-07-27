@@ -41,6 +41,7 @@ describe('RecommendPage', () => {
       skills: [{ ...sampleItem(), motivo: 'Ajuda a extrair texto de PDFs' }],
       repos: [],
       mcps: [],
+      plugins: [],
     });
 
     render(
@@ -106,6 +107,7 @@ describe('RecommendPage', () => {
       skills: [{ ...sampleItem(), motivo: 'Ajuda a extrair texto de PDFs' }],
       repos: [],
       mcps: [],
+      plugins: [],
     });
     await user.click(submit);
 
@@ -139,6 +141,7 @@ describe('RecommendPage', () => {
         },
       ],
       mcps: [],
+      plugins: [],
     });
 
     render(
@@ -165,6 +168,7 @@ describe('RecommendPage', () => {
         },
       ],
       mcps: [],
+      plugins: [],
     });
     vi.spyOn(api, 'downloadItem').mockResolvedValue(sampleItem({ type: 'repo', downloadStatus: 'downloaded' }));
 
@@ -190,6 +194,7 @@ describe('RecommendPage', () => {
       skills: [{ ...sampleItem({ installedGlobally: false }), motivo: 'Ajuda a extrair texto de PDFs' }],
       repos: [],
       mcps: [],
+      plugins: [],
     });
 
     render(
@@ -202,5 +207,28 @@ describe('RecommendPage', () => {
     await user.click(screen.getByRole('button', { name: 'Recomendar' }));
 
     expect(await screen.findByRole('button', { name: 'Instalar globalmente' })).toBeInTheDocument();
+  });
+
+  it('renders a Plugins column with recommended plugin items', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [],
+      repos: [],
+      mcps: [],
+      plugins: [{ ...sampleItem({ type: 'plugin', name: 'Meu Plugin' }), motivo: 'Ajuda nisso' }],
+    });
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Plugins' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Meu Plugin' })).toBeInTheDocument();
   });
 });

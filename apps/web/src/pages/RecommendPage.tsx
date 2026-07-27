@@ -12,6 +12,7 @@ const EMPTY_MESSAGES = {
   skills: 'Nenhuma skill do catálogo cobre essa necessidade.',
   repos: 'Nenhum repositório do catálogo cobre essa necessidade.',
   mcps: 'Nenhum MCP do catálogo cobre essa necessidade.',
+  plugins: 'Nenhum plugin do catálogo cobre essa necessidade.',
 };
 
 interface ResultColumnProps {
@@ -85,7 +86,12 @@ export function RecommendPage() {
       if (!prev) return prev;
       const patch = (list: RecommendedItem[]) =>
         list.map((it) => (it.id === updated.id ? { ...it, ...updated } : it));
-      return { skills: patch(prev.skills), repos: patch(prev.repos), mcps: patch(prev.mcps) };
+      return {
+        skills: patch(prev.skills),
+        repos: patch(prev.repos),
+        mcps: patch(prev.mcps),
+        plugins: patch(prev.plugins),
+      };
     });
   }
 
@@ -146,6 +152,12 @@ export function RecommendPage() {
             title="MCPs"
             items={result.mcps}
             emptyMessage={EMPTY_MESSAGES.mcps}
+            onItemUpdated={handleItemUpdated}
+          />
+          <ResultColumn
+            title="Plugins"
+            items={result.plugins}
+            emptyMessage={EMPTY_MESSAGES.plugins}
             onItemUpdated={handleItemUpdated}
           />
         </div>
