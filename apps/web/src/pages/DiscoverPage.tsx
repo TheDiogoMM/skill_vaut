@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { discoverItems } from '../api/client.js';
+import { discoverItems, translateDiscoverResults } from '../api/client.js';
 import { DiscoverResultCard } from '../components/DiscoverResultCard.js';
 import { Input } from '../components/ui/forms/Input/Input.js';
 import { Select } from '../components/ui/forms/Select/Select.js';
@@ -36,6 +36,14 @@ export function DiscoverPage() {
           if (cancelled) return;
           setResults(data);
           setStatus('ready');
+          // Fire-and-forget: show results in their original language right
+          // away, then swap in translated descriptions once they arrive
+          // instead of blocking the search on an LLM round-trip.
+          translateDiscoverResults(data)
+            .then((translated) => {
+              if (!cancelled) setResults(translated);
+            })
+            .catch(() => {});
         })
         .catch(() => {
           if (!cancelled) setStatus('error');

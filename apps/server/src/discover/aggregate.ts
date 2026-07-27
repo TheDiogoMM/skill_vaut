@@ -3,7 +3,6 @@ import type { DiscoverItemType, DiscoverResult } from './types.js';
 import { searchGitHub } from './github.js';
 import { searchMcpRegistry } from './mcpRegistry.js';
 import { searchSmithery } from './smithery.js';
-import { translateDescriptions } from './translate.js';
 
 const ALL_TYPES: DiscoverItemType[] = ['skill', 'mcp', 'plugin'];
 
@@ -29,6 +28,5 @@ export async function discoverItems(
 ): Promise<DiscoverResult[]> {
   const types = itemType ? [itemType] : ALL_TYPES;
   const perType = await Promise.all(types.map((type) => discoverForType(query, type, config, fetchImpl)));
-  const results = perType.flat();
-  return translateDescriptions(results, config, fetchImpl);
+  return perType.flat();
 }

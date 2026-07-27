@@ -144,3 +144,10 @@ export function discoverItems(q: string, type?: DiscoverItemType): Promise<Disco
   const qs = params.toString();
   return request<DiscoverResult[]>(`/api/discover${qs ? `?${qs}` : ''}`);
 }
+
+export function translateDiscoverResults(results: DiscoverResult[]): Promise<DiscoverResult[]> {
+  return request<DiscoverResult[]>('/api/discover/translate', {
+    method: 'POST',
+    body: JSON.stringify(results),
+  });
+}

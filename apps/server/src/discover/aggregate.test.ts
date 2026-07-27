@@ -5,12 +5,10 @@ import type { DiscoverResult } from './types.js';
 vi.mock('./github.js', () => ({ searchGitHub: vi.fn() }));
 vi.mock('./mcpRegistry.js', () => ({ searchMcpRegistry: vi.fn() }));
 vi.mock('./smithery.js', () => ({ searchSmithery: vi.fn() }));
-vi.mock('./translate.js', () => ({ translateDescriptions: vi.fn((results) => Promise.resolve(results)) }));
 
 import { searchGitHub } from './github.js';
 import { searchMcpRegistry } from './mcpRegistry.js';
 import { searchSmithery } from './smithery.js';
-import { translateDescriptions } from './translate.js';
 import { discoverItems } from './aggregate.js';
 
 function fakeResult(overrides: Partial<DiscoverResult> = {}): DiscoverResult {
@@ -80,18 +78,5 @@ describe('discoverItems', () => {
     expect(searchGitHub).toHaveBeenCalledWith('', 'plugin', config, fetch);
     expect(searchMcpRegistry).toHaveBeenCalledTimes(1);
     expect(searchSmithery).toHaveBeenCalledTimes(1);
-  });
-
-  it('translates the aggregated results before returning them', async () => {
-    const rawResult = fakeResult({ itemType: 'skill', description: 'Original description' });
-    const translatedResult = { ...rawResult, description: 'Descrição traduzida' };
-    vi.mocked(searchGitHub).mockResolvedValue([rawResult]);
-    vi.mocked(translateDescriptions).mockResolvedValue([translatedResult]);
-    const config = loadConfig({} as NodeJS.ProcessEnv);
-
-    const results = await discoverItems('pdf', 'skill', config, fetch);
-
-    expect(translateDescriptions).toHaveBeenCalledWith([rawResult], config, fetch);
-    expect(results).toEqual([translatedResult]);
   });
 });
