@@ -66,7 +66,24 @@ export function itemsRoutes(config: SkillVaultConfig) {
             source = { kind: 'url', url };
           }
 
-          const item = await ingestRepo(config, itemsRepo, categoriesRepo, { name, source });
+          const item = await ingestRepo(config, itemsRepo, categoriesRepo, { type: 'repo', name, source });
+          try {
+            regenerate();
+          } catch (err) {
+            app.log.error(err, 'failed to regenerate index after item creation');
+          }
+          return reply.status(201).send(withGlobalStatus(item));
+        }
+
+        if (type === 'plugin') {
+          const url = fieldValue(body.url);
+          if (!url) return reply.status(400).send({ error: 'url is required for type=plugin' });
+
+          const item = await ingestRepo(config, itemsRepo, categoriesRepo, {
+            type: 'plugin',
+            name,
+            source: { kind: 'url', url },
+          });
           try {
             regenerate();
           } catch (err) {
@@ -232,7 +249,7 @@ export function itemsRoutes(config: SkillVaultConfig) {
       const { id } = request.params as { id: string };
       const item = itemsRepo.getById(Number(id));
       if (!item) return reply.status(404).send({ error: 'item not found' });
-      if (item.type !== 'repo' || item.downloadStatus !== 'not_downloaded') {
+      if (!(item.type === 'repo' || item.type === 'plugin') || item.downloadStatus !== 'not_downloaded') {
         return reply.status(409).send({ error: 'item is not pending download' });
       }
 
@@ -253,7 +270,9 @@ export function itemsRoutes(config: SkillVaultConfig) {
       const { id } = request.params as { id: string };
       const item = itemsRepo.getById(Number(id));
       if (!item) return reply.status(404).send({ error: 'item not found' });
-      if (item.type === 'repo') return reply.status(409).send({ error: 'use /download for repo items' });
+      if (item.type === 'repo' || item.type === 'plugin') {
+        return reply.status(409).send({ error: 'use /download for repo/plugin items' });
+      }
 
       const globalStatus = computeGlobalStatus(config, item);
       if (globalStatus.installedGlobally) {

@@ -155,6 +155,47 @@ describe('POST /api/items (type=repo)', () => {
   });
 });
 
+describe('POST /api/items (type=plugin)', () => {
+  const home = path.join(os.tmpdir(), `skillvault-items-plugin-route-${Date.now()}`);
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it('ingests a plugin by url as not_downloaded, same as a repo', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'plugin', name: 'Fixture Plugin', url: fixtureRepo },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const body = response.json();
+    expect(body.type).toBe('plugin');
+    expect(body.downloadStatus).toBe('not_downloaded');
+    expect(body.installedGlobally).toBeNull();
+  });
+
+  it('rejects a plugin without a url', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'plugin', name: 'Sem URL' },
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+});
+
 describe('POST /api/items (type=skill, source_type=local_path)', () => {
   const home = path.join(os.tmpdir(), `skillvault-items-skill-route-${Date.now()}`);
 
@@ -604,6 +645,28 @@ describe('POST /api/items/:id/download', () => {
 
     expect(response.statusCode).toBe(404);
   });
+
+  it('clones a not_downloaded plugin item and flips it to downloaded', async () => {
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    ensureSkillVaultDirs(config);
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'plugin', name: 'Plugin Para Baixar', url: fixtureRepo },
+    });
+    const created = createResponse.json();
+
+    const downloadResponse = await app.inject({
+      method: 'POST',
+      url: `/api/items/${created.id}/download`,
+    });
+
+    expect(downloadResponse.statusCode).toBe(200);
+    expect(downloadResponse.json().downloadStatus).toBe('downloaded');
+  });
 });
 
 describe('GET /api/items includes global status for skill and mcp items', () => {
@@ -815,6 +878,23 @@ describe('POST /api/items/:id/install', () => {
       method: 'POST',
       url: '/api/items',
       payload: { type: 'repo', name: 'Repo Nao Instala', source_type: 'local_path', path: fixtureRepo },
+    });
+    const created = create.json();
+
+    const install = await app.inject({ method: 'POST', url: `/api/items/${created.id}/install` });
+
+    expect(install.statusCode).toBe(409);
+  });
+
+  it('returns 409 for plugin items (global install is not supported for plugins yet)', async () => {
+    const config = makeConfig();
+    const app = buildApp({ db: createDb(':memory:'), config, webDistPath: noDistPath });
+    const fixtureRepo = createFixtureRepo();
+
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { type: 'plugin', name: 'Plugin Nao Instala', url: fixtureRepo },
     });
     const created = create.json();
 
