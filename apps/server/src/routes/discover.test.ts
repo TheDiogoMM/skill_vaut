@@ -64,4 +64,16 @@ describe('GET /api/discover', () => {
     expect(response.statusCode).toBe(400);
     expect(discoverItems).not.toHaveBeenCalled();
   });
+
+  it('normalizes a repeated q param instead of 500ing', async () => {
+    vi.mocked(discoverItems).mockResolvedValue([]);
+    const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
+
+    const response = await app.inject({ method: 'GET', url: '/api/discover?q=a&q=b&type=skill' });
+
+    expect(response.statusCode).toBe(200);
+    const [calledQuery] = vi.mocked(discoverItems).mock.calls[0];
+    expect(typeof calledQuery).toBe('string');
+    expect(discoverItems).toHaveBeenCalledWith('a', 'skill', expect.anything());
+  });
 });
