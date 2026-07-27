@@ -58,6 +58,7 @@ export interface RecommendResult {
   repos: RecommendedItem[];
   mcps: RecommendedItem[];
   plugins: RecommendedItem[];
+  externalSuggestions: DiscoverResult[];
 }
 
 export interface Consulta {

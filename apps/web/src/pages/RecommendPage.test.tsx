@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { RecommendPage } from './RecommendPage.js';
 import * as api from '../api/client.js';
-import type { Item } from '../types.js';
+import type { DiscoverResult, Item } from '../types.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -43,6 +43,7 @@ describe('RecommendPage', () => {
       repos: [],
       mcps: [],
       plugins: [],
+      externalSuggestions: [],
     });
 
     render(
@@ -109,6 +110,7 @@ describe('RecommendPage', () => {
       repos: [],
       mcps: [],
       plugins: [],
+      externalSuggestions: [],
     });
     await user.click(submit);
 
@@ -166,6 +168,7 @@ describe('RecommendPage', () => {
       ],
       mcps: [],
       plugins: [],
+      externalSuggestions: [],
     });
 
     render(
@@ -193,6 +196,7 @@ describe('RecommendPage', () => {
       ],
       mcps: [],
       plugins: [],
+      externalSuggestions: [],
     });
     vi.spyOn(api, 'downloadItem').mockResolvedValue(sampleItem({ type: 'repo', downloadStatus: 'downloaded' }));
 
@@ -219,6 +223,7 @@ describe('RecommendPage', () => {
       repos: [],
       mcps: [],
       plugins: [],
+      externalSuggestions: [],
     });
 
     render(
@@ -241,6 +246,7 @@ describe('RecommendPage', () => {
       repos: [],
       mcps: [],
       plugins: [{ ...sampleItem({ type: 'plugin', name: 'Meu Plugin' }), motivo: 'Ajuda nisso' }],
+      externalSuggestions: [],
     });
 
     render(
@@ -254,5 +260,108 @@ describe('RecommendPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Plugins' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Meu Plugin' })).toBeInTheDocument();
+  });
+
+  it('renders the "Sugestões externas" section with a card per result', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      externalSuggestions: [
+        {
+          source: 'github',
+          itemType: 'mcp',
+          name: 'someone/pdf-tool',
+          description: 'Handles PDFs',
+          url: 'https://github.com/someone/pdf-tool',
+          rating: { kind: 'stars', value: 42 },
+          verified: false,
+        },
+      ],
+    });
+    vi.spyOn(api, 'translateDiscoverResults').mockImplementation((results) => Promise.resolve(results));
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Sugestões externas' })).toBeInTheDocument();
+    expect(screen.getByText('someone/pdf-tool')).toBeInTheDocument();
+  });
+
+  it('does not render the "Sugestões externas" section when there are none', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [{ ...sampleItem(), motivo: 'x' }],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      externalSuggestions: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    await screen.findByRole('link', { name: 'PDF Parser' });
+    expect(screen.queryByRole('heading', { name: 'Sugestões externas' })).not.toBeInTheDocument();
+  });
+
+  it('translates external suggestion descriptions in a second pass after the recommendation loads', async () => {
+    const user = userEvent.setup();
+    const original: DiscoverResult = {
+      source: 'github',
+      itemType: 'mcp',
+      name: 'someone/pdf-tool',
+      description: 'Handles PDFs',
+      url: 'https://github.com/someone/pdf-tool',
+      rating: { kind: 'stars', value: 42 },
+      verified: false,
+    };
+    const translated: DiscoverResult = { ...original, description: 'Lida com PDFs' };
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      externalSuggestions: [original],
+    });
+    let resolveTranslate!: (value: DiscoverResult[]) => void;
+    vi.spyOn(api, 'translateDiscoverResults').mockReturnValue(
+      new Promise((resolve) => {
+        resolveTranslate = resolve;
+      })
+    );
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+
+    expect(await screen.findByText('Handles PDFs')).toBeInTheDocument();
+
+    resolveTranslate([translated]);
+
+    expect(await screen.findByText('Lida com PDFs')).toBeInTheDocument();
+    expect(screen.queryByText('Handles PDFs')).not.toBeInTheDocument();
   });
 });

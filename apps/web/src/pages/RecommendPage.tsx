@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { getRecommendations, listConsultas } from '../api/client.js';
+import { getRecommendations, listConsultas, translateDiscoverResults } from '../api/client.js';
 import type { Consulta, Item, RecommendedItem, RecommendResult } from '../types.js';
 import { Textarea } from '../components/ui/forms/Textarea/Textarea.js';
 import { Button } from '../components/ui/core/Button/Button.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 import { RepoDownloadAction } from '../components/ui/data-display/RepoDownloadAction/RepoDownloadAction.js';
 import { GlobalInstallAction } from '../components/ui/data-display/GlobalInstallAction/GlobalInstallAction.js';
+import { DiscoverResultCard } from '../components/DiscoverResultCard.js';
 
 const EMPTY_MESSAGES = {
   skills: 'Nenhuma skill do catálogo cobre essa necessidade.',
@@ -91,6 +92,7 @@ export function RecommendPage() {
         repos: patch(prev.repos),
         mcps: patch(prev.mcps),
         plugins: patch(prev.plugins),
+        externalSuggestions: prev.externalSuggestions,
       };
     });
   }
@@ -104,6 +106,13 @@ export function RecommendPage() {
       const data = await getRecommendations(ideia);
       setResult(data);
       setStatus('idle');
+      if (data.externalSuggestions.length > 0) {
+        translateDiscoverResults(data.externalSuggestions)
+          .then((translated) => {
+            setResult((prev) => (prev === data ? { ...prev, externalSuggestions: translated } : prev));
+          })
+          .catch(() => {});
+      }
     } catch (err) {
       setError((err as Error).message);
       setStatus('error');
@@ -135,32 +144,55 @@ export function RecommendPage() {
       </form>
 
       {result && (
-        <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
-          <ResultColumn
-            title="Skills"
-            items={result.skills}
-            emptyMessage={EMPTY_MESSAGES.skills}
-            onItemUpdated={handleItemUpdated}
-          />
-          <ResultColumn
-            title="Repos"
-            items={result.repos}
-            emptyMessage={EMPTY_MESSAGES.repos}
-            onItemUpdated={handleItemUpdated}
-          />
-          <ResultColumn
-            title="MCPs"
-            items={result.mcps}
-            emptyMessage={EMPTY_MESSAGES.mcps}
-            onItemUpdated={handleItemUpdated}
-          />
-          <ResultColumn
-            title="Plugins"
-            items={result.plugins}
-            emptyMessage={EMPTY_MESSAGES.plugins}
-            onItemUpdated={handleItemUpdated}
-          />
-        </div>
+        <>
+          <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
+            <ResultColumn
+              title="Skills"
+              items={result.skills}
+              emptyMessage={EMPTY_MESSAGES.skills}
+              onItemUpdated={handleItemUpdated}
+            />
+            <ResultColumn
+              title="Repos"
+              items={result.repos}
+              emptyMessage={EMPTY_MESSAGES.repos}
+              onItemUpdated={handleItemUpdated}
+            />
+            <ResultColumn
+              title="MCPs"
+              items={result.mcps}
+              emptyMessage={EMPTY_MESSAGES.mcps}
+              onItemUpdated={handleItemUpdated}
+            />
+            <ResultColumn
+              title="Plugins"
+              items={result.plugins}
+              emptyMessage={EMPTY_MESSAGES.plugins}
+              onItemUpdated={handleItemUpdated}
+            />
+          </div>
+
+          {result.externalSuggestions.length > 0 && (
+            <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 'var(--text-title)',
+                  fontWeight: 'var(--fw-title)',
+                  color: 'var(--color-text)',
+                }}
+              >
+                Sugestões externas
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+                {result.externalSuggestions.map((suggestion) => (
+                  <DiscoverResultCard key={`${suggestion.source}-${suggestion.url}`} result={suggestion} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       {consultas.length > 0 && (
