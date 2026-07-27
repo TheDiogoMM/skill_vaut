@@ -8,6 +8,7 @@ export interface ParsedRecommendResult {
   repos: ParsedRecommendation[];
   mcps: ParsedRecommendation[];
   plugins: ParsedRecommendation[];
+  termoBusca: string;
 }
 
 function parseList(value: unknown): ParsedRecommendation[] | null {
@@ -33,8 +34,10 @@ export function parseRecommendJson(raw: string): ParsedRecommendResult | null {
     const repos = parseList(parsed.repos);
     const mcps = parseList(parsed.mcps);
     const plugins = parseList(parsed.plugins);
+    const termoBusca = parsed.termo_busca;
     if (!skills || !repos || !mcps || !plugins) return null;
-    return { skills, repos, mcps, plugins };
+    if (typeof termoBusca !== 'string' || termoBusca.trim() === '') return null;
+    return { skills, repos, mcps, plugins, termoBusca };
   } catch {
     return null;
   }
