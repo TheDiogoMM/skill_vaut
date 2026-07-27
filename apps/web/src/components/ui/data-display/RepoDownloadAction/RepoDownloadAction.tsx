@@ -13,7 +13,7 @@ export interface RepoDownloadActionProps {
 export function RepoDownloadAction({ item, onUpdated }: RepoDownloadActionProps) {
   const [status, setStatus] = useState<'idle' | 'downloading' | 'error'>('idle');
 
-  if (item.type !== 'repo' || !item.downloadStatus) return null;
+  if ((item.type !== 'repo' && item.type !== 'plugin') || !item.downloadStatus) return null;
 
   if (item.downloadStatus === 'local') {
     return (

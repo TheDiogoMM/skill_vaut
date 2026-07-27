@@ -37,6 +37,11 @@ describe('RepoDownloadAction', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('renders nothing for mcp items', () => {
+    const { container } = render(<RepoDownloadAction item={sampleItem({ type: 'mcp', downloadStatus: null })} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('shows a "Local" label when downloadStatus is local', () => {
     render(<RepoDownloadAction item={sampleItem({ downloadStatus: 'local' })} />);
     expect(screen.getByText('Local')).toBeInTheDocument();
@@ -55,6 +60,28 @@ describe('RepoDownloadAction', () => {
     const onUpdated = vi.fn();
 
     render(<RepoDownloadAction item={sampleItem({ downloadStatus: 'not_downloaded' })} onUpdated={onUpdated} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Baixar' }));
+
+    await waitFor(() => expect(onUpdated).toHaveBeenCalledWith(updatedItem));
+    expect(client.downloadItem).toHaveBeenCalledWith(1);
+  });
+
+  it('renders the Baixar button for plugin items with a pending download', () => {
+    render(<RepoDownloadAction item={sampleItem({ type: 'plugin', downloadStatus: 'not_downloaded' })} />);
+    expect(screen.getByRole('button', { name: 'Baixar' })).toBeInTheDocument();
+  });
+
+  it('downloads a plugin item and calls onUpdated when downloadStatus is not_downloaded', async () => {
+    const updatedItem = sampleItem({ type: 'plugin', downloadStatus: 'downloaded' });
+    vi.spyOn(client, 'downloadItem').mockResolvedValue(updatedItem);
+    const onUpdated = vi.fn();
+
+    render(
+      <RepoDownloadAction
+        item={sampleItem({ type: 'plugin', downloadStatus: 'not_downloaded' })}
+        onUpdated={onUpdated}
+      />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Baixar' }));
 
     await waitFor(() => expect(onUpdated).toHaveBeenCalledWith(updatedItem));
