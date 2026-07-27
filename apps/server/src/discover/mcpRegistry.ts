@@ -8,8 +8,17 @@ interface McpRegistryServer {
   repository?: { url?: string };
 }
 
+interface McpRegistryOfficialMeta {
+  isLatest?: boolean;
+}
+
+interface McpRegistryEntryMeta {
+  'io.modelcontextprotocol.registry/official'?: McpRegistryOfficialMeta;
+}
+
 interface McpRegistryEntry {
   server: McpRegistryServer;
+  _meta?: McpRegistryEntryMeta;
 }
 
 interface McpRegistryResponse {
@@ -32,7 +41,14 @@ export async function searchMcpRegistry(
     const response = await fetchImpl(url);
     if (!response.ok) return [];
     const data = (await response.json()) as McpRegistryResponse;
-    return (data.servers ?? []).map(({ server }) => ({
+    // The registry returns one entry per published version of a server, not one per server.
+    // Only keep the latest version of each so a server doesn't appear multiple times in
+    // results. If the isLatest flag is missing/malformed for an entry, default to treating
+    // it as latest rather than crashing or silently dropping it.
+    const latestEntries = (data.servers ?? []).filter(
+      (entry) => entry._meta?.['io.modelcontextprotocol.registry/official']?.isLatest !== false
+    );
+    return latestEntries.map(({ server }) => ({
       source: 'mcp_registry' as const,
       itemType: 'mcp' as const,
       name: server.name,
