@@ -26,9 +26,9 @@ Catálogo disponível (só pode recomendar itens desta lista, citando o id exato
 ${catalogLines || '(catálogo vazio)'}
 
 Responda APENAS com um JSON no formato:
-{"skills": [{"id": N, "motivo": "por que esse item ajuda nessa ideia"}], "repos": [...], "mcps": [...], "plugins": [...]}
+{"skills": [{"id": N, "motivo": "por que esse item ajuda nessa ideia"}], "repos": [...], "mcps": [...], "plugins": [...], "termo_busca": "algumas palavras-chave"}
 
-Cite apenas ids que aparecem na lista acima. Se nada do catálogo servir para um tipo, retorne um array vazio para esse tipo.`;
+Cite apenas ids que aparecem na lista acima. Se nada do catálogo servir para um tipo, retorne um array vazio para esse tipo. "termo_busca" deve ser uma frase curta (1 a 3 palavras) que resuma a ideia, útil para buscar ferramentas relacionadas em fontes externas — nunca vazia.`;
 }
 
 // Passed as Ollama's `format` field (grammar-constrained decoding) so small
@@ -51,6 +51,7 @@ export const RECOMMEND_JSON_SCHEMA = {
     repos: RECOMMENDATION_LIST_SCHEMA,
     mcps: RECOMMENDATION_LIST_SCHEMA,
     plugins: RECOMMENDATION_LIST_SCHEMA,
+    termo_busca: { type: 'string' },
   },
-  required: ['skills', 'repos', 'mcps', 'plugins'],
+  required: ['skills', 'repos', 'mcps', 'plugins', 'termo_busca'],
 };
