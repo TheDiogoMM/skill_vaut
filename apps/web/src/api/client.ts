@@ -1,4 +1,14 @@
-import type { Category, Item, ItemDetail, ItemFilters, ItemUpdate, RecommendResult, Consulta } from '../types.js';
+import type {
+  Category,
+  Item,
+  ItemDetail,
+  ItemFilters,
+  ItemUpdate,
+  RecommendResult,
+  Consulta,
+  DiscoverResult,
+  DiscoverItemType,
+} from '../types.js';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const isJsonBody = typeof init?.body === 'string';
@@ -125,4 +135,12 @@ export function getRecommendations(ideia: string): Promise<RecommendResult> {
 
 export function listConsultas(): Promise<Consulta[]> {
   return request<Consulta[]>('/api/consultas');
+}
+
+export function discoverItems(q: string, type?: DiscoverItemType): Promise<DiscoverResult[]> {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (type) params.set('type', type);
+  const qs = params.toString();
+  return request<DiscoverResult[]>(`/api/discover${qs ? `?${qs}` : ''}`);
 }
