@@ -18,14 +18,15 @@ interface GitHubSearchResponse {
   items?: GitHubRepoItem[];
 }
 
-export async function searchGitHub(
+async function searchGitHubByTopic(
   query: string,
   itemType: DiscoverItemType,
+  topic: string,
   config: SkillVaultConfig,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch
 ): Promise<DiscoverResult[]> {
-  const topicFilters = TOPICS[itemType].map((topic) => `topic:${topic}`).join(' ');
-  const q = query.trim() ? `${query.trim()} ${topicFilters}` : topicFilters;
+  const topicFilter = `topic:${topic}`;
+  const q = query.trim() ? `${query.trim()} ${topicFilter}` : topicFilter;
   const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc`;
 
   try {
@@ -49,4 +50,24 @@ export async function searchGitHub(
   } catch {
     return [];
   }
+}
+
+export async function searchGitHub(
+  query: string,
+  itemType: DiscoverItemType,
+  config: SkillVaultConfig,
+  fetchImpl: typeof fetch = fetch
+): Promise<DiscoverResult[]> {
+  const resultsByTopic = await Promise.all(
+    TOPICS[itemType].map((topic) => searchGitHubByTopic(query, itemType, topic, config, fetchImpl))
+  );
+
+  const byUrl = new Map<string, DiscoverResult>();
+  for (const results of resultsByTopic) {
+    for (const result of results) {
+      if (!byUrl.has(result.url)) byUrl.set(result.url, result);
+    }
+  }
+
+  return Array.from(byUrl.values()).sort((a, b) => (b.rating.value ?? 0) - (a.rating.value ?? 0));
 }

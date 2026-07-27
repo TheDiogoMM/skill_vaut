@@ -1524,18 +1524,28 @@ function fakeResponse(body: unknown, ok = true): Response {
   return { ok, json: async () => body } as Response;
 }
 
+function repoItem(overrides: Partial<{ full_name: string; description: string | null; html_url: string; stargazers_count: number }>) {
+  return {
+    full_name: 'someone/repo',
+    description: 'A repo',
+    html_url: 'https://github.com/someone/repo',
+    stargazers_count: 0,
+    ...overrides,
+  };
+}
+
 describe('searchGitHub', () => {
   it('maps GitHub search results into the common DiscoverResult shape', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     const fetchImpl = (async () =>
       fakeResponse({
         items: [
-          {
+          repoItem({
             full_name: 'someone/awesome-mcp-server',
             description: 'An awesome MCP server',
             html_url: 'https://github.com/someone/awesome-mcp-server',
             stargazers_count: 1234,
-          },
+          }),
         ],
       })) as typeof fetch;
 
@@ -1554,60 +1564,181 @@ describe('searchGitHub', () => {
     ]);
   });
 
-  it('combines the query with type-specific topic filters', async () => {
+  it('issues one fetch call per topic for the given item type', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
-    let capturedUrl = '';
+    const capturedUrls: string[] = [];
     const fetchImpl = (async (url: string) => {
-      capturedUrl = url;
+      capturedUrls.push(url);
       return fakeResponse({ items: [] });
     }) as typeof fetch;
 
     await searchGitHub('pdf', 'mcp', config, fetchImpl);
 
-    expect(capturedUrl).toContain(encodeURIComponent('pdf topic:mcp-server topic:model-context-protocol'));
+    expect(capturedUrls).toHaveLength(2);
+    expect(capturedUrls.some((url) => url.includes(encodeURIComponent('topic:mcp-server')))).toBe(true);
+    expect(capturedUrls.some((url) => url.includes(encodeURIComponent('topic:model-context-protocol')))).toBe(true);
+    // Each request carries only its own topic, never both combined (that's the old, buggy AND behavior).
+    for (const url of capturedUrls) {
+      expect(url.includes(encodeURIComponent('topic:mcp-server')) && url.includes(encodeURIComponent('topic:model-context-protocol'))).toBe(
+        false
+      );
+    }
   });
 
-  it('uses only topic filters (no free-text term) when the query is empty', async () => {
+  it('combines the free-text query with each topic filter separately', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
-    let capturedUrl = '';
+    const capturedUrls: string[] = [];
     const fetchImpl = (async (url: string) => {
-      capturedUrl = url;
+      capturedUrls.push(url);
+      return fakeResponse({ items: [] });
+    }) as typeof fetch;
+
+    await searchGitHub('pdf', 'mcp', config, fetchImpl);
+
+    expect(capturedUrls.some((url) => url.includes(encodeURIComponent('pdf topic:mcp-server')))).toBe(true);
+    expect(capturedUrls.some((url) => url.includes(encodeURIComponent('pdf topic:model-context-protocol')))).toBe(true);
+  });
+
+  it('uses only the topic filter (no free-text term) when the query is empty', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const capturedUrls: string[] = [];
+    const fetchImpl = (async (url: string) => {
+      capturedUrls.push(url);
       return fakeResponse({ items: [] });
     }) as typeof fetch;
 
     await searchGitHub('', 'skill', config, fetchImpl);
 
-    expect(capturedUrl).toContain(encodeURIComponent('topic:claude-skill topic:claude-skills'));
-    expect(capturedUrl).not.toContain('%20topic'.slice(0, 0));
+    expect(capturedUrls).toHaveLength(2);
+    expect(capturedUrls.some((url) => url.endsWith(`q=${encodeURIComponent('topic:claude-skill')}&sort=stars&order=desc`))).toBe(true);
+    expect(capturedUrls.some((url) => url.endsWith(`q=${encodeURIComponent('topic:claude-skills')}&sort=stars&order=desc`))).toBe(true);
+  });
+
+  it('merges and deduplicates results from multiple topic queries by url', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const shared = repoItem({
+      full_name: 'someone/shared-repo',
+      html_url: 'https://github.com/someone/shared-repo',
+      stargazers_count: 50,
+    });
+    const uniqueToFirst = repoItem({
+      full_name: 'someone/first-only',
+      html_url: 'https://github.com/someone/first-only',
+      stargazers_count: 10,
+    });
+    const uniqueToSecond = repoItem({
+      full_name: 'someone/second-only',
+      html_url: 'https://github.com/someone/second-only',
+      stargazers_count: 20,
+    });
+
+    const fetchImpl = (async (url: string) => {
+      if (url.includes(encodeURIComponent('topic:mcp-server'))) {
+        return fakeResponse({ items: [shared, uniqueToFirst] });
+      }
+      return fakeResponse({ items: [shared, uniqueToSecond] });
+    }) as typeof fetch;
+
+    const results = await searchGitHub('pdf', 'mcp', config, fetchImpl);
+
+    const urls = results.map((r) => r.url);
+    expect(urls.filter((u) => u === 'https://github.com/someone/shared-repo')).toHaveLength(1);
+    expect(urls).toContain('https://github.com/someone/first-only');
+    expect(urls).toContain('https://github.com/someone/second-only');
+    expect(results).toHaveLength(3);
+  });
+
+  it('sorts merged results by rating (stars) descending', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const low = repoItem({ full_name: 'someone/low', html_url: 'https://github.com/someone/low', stargazers_count: 5 });
+    const high = repoItem({ full_name: 'someone/high', html_url: 'https://github.com/someone/high', stargazers_count: 500 });
+    const mid = repoItem({ full_name: 'someone/mid', html_url: 'https://github.com/someone/mid', stargazers_count: 50 });
+
+    const fetchImpl = (async (url: string) => {
+      if (url.includes(encodeURIComponent('topic:mcp-server'))) {
+        return fakeResponse({ items: [low, high] });
+      }
+      return fakeResponse({ items: [mid] });
+    }) as typeof fetch;
+
+    const results = await searchGitHub('pdf', 'mcp', config, fetchImpl);
+
+    expect(results.map((r) => r.name)).toEqual(['someone/high', 'someone/mid', 'someone/low']);
   });
 
   it('sends an Authorization header when a GitHub token is configured', async () => {
     const config = loadConfig({ GITHUB_TOKEN: 'ghp_test' } as NodeJS.ProcessEnv);
-    let capturedHeaders: Record<string, string> | undefined;
+    const capturedHeaders: (Record<string, string> | undefined)[] = [];
     const fetchImpl = (async (_url: string, init?: RequestInit) => {
-      capturedHeaders = init?.headers as Record<string, string>;
+      capturedHeaders.push(init?.headers as Record<string, string>);
       return fakeResponse({ items: [] });
     }) as typeof fetch;
 
     await searchGitHub('', 'skill', config, fetchImpl);
 
-    expect(capturedHeaders).toMatchObject({ Authorization: 'Bearer ghp_test' });
+    expect(capturedHeaders.length).toBeGreaterThan(0);
+    for (const headers of capturedHeaders) {
+      expect(headers).toMatchObject({ Authorization: 'Bearer ghp_test' });
+    }
   });
 
   it('omits the Authorization header when no token is configured', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
-    let capturedHeaders: Record<string, string> | undefined;
+    const capturedHeaders: (Record<string, string> | undefined)[] = [];
     const fetchImpl = (async (_url: string, init?: RequestInit) => {
-      capturedHeaders = init?.headers as Record<string, string>;
+      capturedHeaders.push(init?.headers as Record<string, string>);
       return fakeResponse({ items: [] });
     }) as typeof fetch;
 
     await searchGitHub('', 'skill', config, fetchImpl);
 
-    expect(capturedHeaders).not.toHaveProperty('Authorization');
+    expect(capturedHeaders.length).toBeGreaterThan(0);
+    for (const headers of capturedHeaders) {
+      expect(headers).not.toHaveProperty('Authorization');
+    }
   });
 
-  it('returns an empty array when the GitHub API responds with an error', async () => {
+  it('returns results from the other topic when one topic request fails (non-2xx)', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const okRepo = repoItem({
+      full_name: 'someone/still-here',
+      html_url: 'https://github.com/someone/still-here',
+      stargazers_count: 42,
+    });
+
+    const fetchImpl = (async (url: string) => {
+      if (url.includes(encodeURIComponent('topic:mcp-server'))) {
+        return fakeResponse(null, false);
+      }
+      return fakeResponse({ items: [okRepo] });
+    }) as typeof fetch;
+
+    const results = await searchGitHub('pdf', 'mcp', config, fetchImpl);
+
+    expect(results.map((r) => r.name)).toEqual(['someone/still-here']);
+  });
+
+  it('returns results from the other topic when one topic request throws', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const okRepo = repoItem({
+      full_name: 'someone/survivor',
+      html_url: 'https://github.com/someone/survivor',
+      stargazers_count: 7,
+    });
+
+    const fetchImpl = (async (url: string) => {
+      if (url.includes(encodeURIComponent('topic:mcp-server'))) {
+        throw new Error('network down');
+      }
+      return fakeResponse({ items: [okRepo] });
+    }) as typeof fetch;
+
+    const results = await searchGitHub('pdf', 'mcp', config, fetchImpl);
+
+    expect(results.map((r) => r.name)).toEqual(['someone/survivor']);
+  });
+
+  it('returns an empty array when every topic request responds with an error', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     const fetchImpl = (async () => fakeResponse(null, false)) as typeof fetch;
 
@@ -1616,7 +1747,7 @@ describe('searchGitHub', () => {
     expect(results).toEqual([]);
   });
 
-  it('returns an empty array when the fetch call throws', async () => {
+  it('returns an empty array when every topic request throws', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     const fetchImpl = (async () => {
       throw new Error('network down');
@@ -1629,7 +1760,7 @@ describe('searchGitHub', () => {
 });
 ```
 
-(o terceiro teste tem uma asserção redundante de sanity check `not.toContain('%20topic'.slice(0, 0))` que sempre passa contra string vazia — remova essa segunda linha, ela não agrega nada; mantenha só o `expect(capturedUrl).toContain(...)`.)
+Nota: cada teste que envolve múltiplos tópicos usa `url.includes(encodeURIComponent('topic:mcp-server'))` para decidir qual resposta mockada devolver a cada chamada de `fetchImpl` — como os dois pedidos por tópico saem em paralelo (`Promise.all`), não dá para depender da ordem de chamadas.
 
 - [ ] **Step 3: Run tests to verify they fail**
 
@@ -1661,14 +1792,15 @@ interface GitHubSearchResponse {
   items?: GitHubRepoItem[];
 }
 
-export async function searchGitHub(
+async function searchGitHubByTopic(
   query: string,
   itemType: DiscoverItemType,
+  topic: string,
   config: SkillVaultConfig,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch
 ): Promise<DiscoverResult[]> {
-  const topicFilters = TOPICS[itemType].map((topic) => `topic:${topic}`).join(' ');
-  const q = query.trim() ? `${query.trim()} ${topicFilters}` : topicFilters;
+  const topicFilter = `topic:${topic}`;
+  const q = query.trim() ? `${query.trim()} ${topicFilter}` : topicFilter;
   const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc`;
 
   try {
@@ -1693,12 +1825,38 @@ export async function searchGitHub(
     return [];
   }
 }
+
+export async function searchGitHub(
+  query: string,
+  itemType: DiscoverItemType,
+  config: SkillVaultConfig,
+  fetchImpl: typeof fetch = fetch
+): Promise<DiscoverResult[]> {
+  // GitHub's search syntax ANDs space-separated qualifiers, including repeated `topic:` qualifiers —
+  // so a single request combining all topics for an itemType would require a repo to carry every
+  // synonym topic at once (near-impossible in practice). Query each topic separately in parallel,
+  // then merge + dedupe (by url, since a repo could match more than one topic) + sort by rating.
+  const resultsByTopic = await Promise.all(
+    TOPICS[itemType].map((topic) => searchGitHubByTopic(query, itemType, topic, config, fetchImpl))
+  );
+
+  const byUrl = new Map<string, DiscoverResult>();
+  for (const results of resultsByTopic) {
+    for (const result of results) {
+      if (!byUrl.has(result.url)) byUrl.set(result.url, result);
+    }
+  }
+
+  return Array.from(byUrl.values()).sort((a, b) => (b.rating.value ?? 0) - (a.rating.value ?? 0));
+}
 ```
+
+Cada tópico é buscado em uma request HTTP separada (combinada com o termo de busca livre via AND, como antes — isso já funcionava), disparadas em paralelo com `Promise.all`. Erros (fetch throw ou resposta não-2xx) em uma request de tópico não impedem os resultados de outra request de tópico bem-sucedida — cada chamada trata seus próprios erros e devolve `[]` isoladamente. Os resultados de todas as requests são então mesclados, deduplicados por `url` (um repo pode aparecer em mais de uma busca por tópico) e ordenados por `rating.value` decrescente.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `cd apps/server && npx vitest run src/discover/github.test.ts`
-Expected: PASS (6 testes).
+Expected: PASS (12 testes).
 
 - [ ] **Step 6: Commit**
 
