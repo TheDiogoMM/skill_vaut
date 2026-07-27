@@ -13,7 +13,7 @@ function itemsTypeCheckAllowsPlugin(db: Database.Database): boolean {
   return !!row && row.sql.includes("'plugin'");
 }
 
-function migrateItemsTypeCheck(db: Database.Database): void {
+export function migrateItemsTypeCheck(db: Database.Database): void {
   if (itemsTypeCheckAllowsPlugin(db)) return;
 
   db.exec(`

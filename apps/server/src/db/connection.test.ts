@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
-import { createDb } from './connection.js';
+import { createDb, migrateItemsTypeCheck } from './connection.js';
 
 describe('createDb', () => {
   it('creates categories, items, and consultas tables', () => {
@@ -144,29 +144,51 @@ describe('createDb', () => {
   });
 
   it('leaves the original items table fully intact if a mid-migration statement fails (atomicity)', () => {
-    // This mirrors migrateItemsTypeCheck's exact BEGIN/CREATE/INSERT/DROP/COMMIT shape,
-    // but deliberately breaks the INSERT...SELECT step to force a failure between
-    // CREATE TABLE and DROP TABLE — the exact window a process crash could hit. It proves
-    // the durability guarantee the fix relies on: db.exec() doesn't auto-rollback on error
-    // (the transaction is left open in-process), but because nothing was ever COMMITted,
-    // closing and reopening the connection (standing in for a crash + restart) rolls the
-    // whole sequence back and the original table/data survive under their original name.
+    // Exercises the REAL migrateItemsTypeCheck (not a re-implementation). We force a genuine
+    // failure inside it by handing it a legacy `items` table that predates the
+    // `global_install_status` column — a plausible even-older pre-existing database. The
+    // migration's own INSERT INTO items (...) SELECT (...) FROM items_old_type_check
+    // references global_install_status, which doesn't exist on items_old_type_check, so the
+    // real SELECT genuinely throws partway through the real transaction: after
+    // `CREATE TABLE items` has already run but before COMMIT. This proves the durability
+    // guarantee the BEGIN/COMMIT fix relies on: closing and reopening the connection
+    // (standing in for a crash + restart) rolls the whole sequence back and the original
+    // items table survives, under its original name, with its original data, in its
+    // original pre-migration shape (CHECK constraint still excluding 'plugin').
     const dbPath = path.join(os.tmpdir(), `skillvault-migration-atomicity-${Date.now()}.db`);
     const db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
-    db.exec('CREATE TABLE items (id INTEGER PRIMARY KEY, type TEXT, name TEXT);');
-    db.prepare(`INSERT INTO items (type, name) VALUES ('repo', 'Original Repo')`).run();
+    db.exec(`
+      CREATE TABLE items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL CHECK (type IN ('skill','repo','mcp')),
+        name TEXT NOT NULL,
+        source_type TEXT NOT NULL CHECK (source_type IN ('local_path','upload','url','manual')),
+        source_value TEXT NOT NULL,
+        local_path TEXT NOT NULL,
+        category_id INTEGER,
+        summary TEXT,
+        utility TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        enrichment_source TEXT CHECK (enrichment_source IN ('ollama','gemini','manual')),
+        download_status TEXT CHECK (download_status IN ('local','not_downloaded','downloaded')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    db.prepare(
+      `INSERT INTO items (type, name, source_type, source_value, local_path, tags, created_at, updated_at)
+       VALUES ('repo', 'Original Repo', 'url', 'https://example.com/old.git', '/vault/old-repo', '[]', '2026-01-01', '2026-01-01')`
+    ).run();
 
-    expect(() =>
-      db.exec(`
-        BEGIN TRANSACTION;
-        ALTER TABLE items RENAME TO items_old_type_check;
-        CREATE TABLE items (id INTEGER PRIMARY KEY, type TEXT, name TEXT);
-        INSERT INTO items (id, type, name) SELECT id, type, nonexistent_column FROM items_old_type_check;
-        DROP TABLE items_old_type_check;
-        COMMIT;
-      `)
-    ).toThrow();
+    const originalTableSql = (
+      db
+        .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'items'")
+        .get() as { sql: string }
+    ).sql;
+
+    // The real migration function, called directly — no hand-copied SQL.
+    expect(() => migrateItemsTypeCheck(db)).toThrow();
 
     // Simulate a crash: close without an explicit ROLLBACK, then reopen the same file.
     db.close();
@@ -176,8 +198,17 @@ describe('createDb', () => {
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
       .all()
       .map((row) => (row as { name: string }).name);
-    expect(tables).toEqual(['items']);
+    expect(tables).toContain('items');
     expect(tables).not.toContain('items_old_type_check');
+
+    // The surviving table must be the ORIGINAL pre-migration table, not a half-applied new one.
+    const reopenedTableSql = (
+      reopened
+        .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'items'")
+        .get() as { sql: string }
+    ).sql;
+    expect(reopenedTableSql).toEqual(originalTableSql);
+    expect(reopenedTableSql).not.toContain("'plugin'");
 
     const rows = reopened.prepare('SELECT type, name FROM items').all();
     expect(rows).toEqual([{ type: 'repo', name: 'Original Repo' }]);
