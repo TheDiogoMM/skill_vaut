@@ -168,8 +168,17 @@ export function RecommendPage() {
           <h3 style={{ margin: 0, fontSize: 14, color: 'var(--color-text)' }}>Histórico</h3>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {consultas.map((consulta) => (
-              <li key={consulta.id} style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>
-                {consulta.ideia} — {new Date(consulta.createdAt).toLocaleString('pt-BR')}
+              <li
+                key={consulta.id}
+                style={{ display: 'flex', gap: 4, minWidth: 0, fontSize: 13, color: 'var(--color-text-tertiary)' }}
+              >
+                <span
+                  title={consulta.ideia}
+                  style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                >
+                  {consulta.ideia}
+                </span>
+                <span style={{ flexShrink: 0 }}>— {new Date(consulta.createdAt).toLocaleString('pt-BR')}</span>
               </li>
             ))}
           </ul>

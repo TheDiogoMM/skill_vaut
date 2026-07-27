@@ -129,6 +129,29 @@ describe('RecommendPage', () => {
     expect(await screen.findByText(/app de leitura de PDFs/)).toBeInTheDocument();
   });
 
+  it('truncates a long history entry to a single line, keeping the full text available on hover', async () => {
+    const longIdeia = 'Uma ideia muito longa. '.repeat(50);
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([
+      { id: 1, ideia: longIdeia, createdAt: '2026-07-20T10:00:00.000Z' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText(/Histórico/);
+
+    // @testing-library/dom's getByTitle/queryByTitle exact-matcher doesn't
+    // reliably match extremely long attribute values, so read the attribute
+    // directly instead of relying on the title-matching queries here.
+    const entry = document.querySelector('li span[title]');
+    expect(entry).not.toBeNull();
+    expect(entry).toHaveAttribute('title', longIdeia);
+    expect(entry).toHaveStyle({ overflow: 'hidden', whiteSpace: 'nowrap' });
+  });
+
   it('shows a download action for a repo result pending download', async () => {
     const user = userEvent.setup();
     vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
