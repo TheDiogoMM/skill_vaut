@@ -6,6 +6,7 @@ export type AvailabilityTone = 'positive' | 'neutral';
 export interface AvailabilityBadgeProps {
   tone: AvailabilityTone;
   icon: IconName;
+  title?: string;
   children: ReactNode;
 }
 
@@ -22,10 +23,11 @@ const TONE_STYLE: Record<AvailabilityTone, { color: string; background: string; 
   },
 };
 
-export function AvailabilityBadge({ tone, icon, children }: AvailabilityBadgeProps) {
+export function AvailabilityBadge({ tone, icon, title, children }: AvailabilityBadgeProps) {
   const style = TONE_STYLE[tone];
   return (
     <span
+      title={title}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

@@ -20,4 +20,13 @@ describe('AvailabilityBadge', () => {
     );
     expect(screen.getByText('Não instalado')).toBeInTheDocument();
   });
+
+  it('forwards the title prop to the underlying span for a tooltip', () => {
+    render(
+      <AvailabilityBadge tone="positive" icon="check-circle-2" title="C:\Users\me\.claude\skills\my-skill">
+        Instalado
+      </AvailabilityBadge>
+    );
+    expect(screen.getByText('Instalado')).toHaveAttribute('title', 'C:\\Users\\me\\.claude\\skills\\my-skill');
+  });
 });
