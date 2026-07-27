@@ -11,9 +11,12 @@ describe('searchMcpRegistry', () => {
       fakeResponse({
         servers: [
           {
-            name: 'io.example/pdf-tools',
-            description: 'PDF tools MCP server',
-            repository: { url: 'https://github.com/example/pdf-tools' },
+            server: {
+              name: 'io.example/pdf-tools',
+              description: 'PDF tools MCP server',
+              repository: { url: 'https://github.com/example/pdf-tools' },
+            },
+            _meta: {},
           },
         ],
       })) as typeof fetch;
@@ -35,7 +38,7 @@ describe('searchMcpRegistry', () => {
 
   it('falls back to the registry page URL when no repository url is present', async () => {
     const fetchImpl = (async () =>
-      fakeResponse({ servers: [{ name: 'io.example/no-repo' }] })) as typeof fetch;
+      fakeResponse({ servers: [{ server: { name: 'io.example/no-repo' } }] })) as typeof fetch;
 
     const results = await searchMcpRegistry('', fetchImpl);
 
