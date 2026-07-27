@@ -62,7 +62,7 @@ describe('ingestRepo', () => {
       config,
       itemsRepo,
       categoriesRepo,
-      { name: 'Fixture Repo', source: { kind: 'local_path', path: fixtureRepo } },
+      { type: 'repo', name: 'Fixture Repo', source: { kind: 'local_path', path: fixtureRepo } },
       stubEnrich
     );
 
@@ -88,7 +88,7 @@ describe('ingestRepo', () => {
       config,
       itemsRepo,
       categoriesRepo,
-      { name: 'Sem Remote', source: { kind: 'local_path', path: fixtureRepo } },
+      { type: 'repo', name: 'Sem Remote', source: { kind: 'local_path', path: fixtureRepo } },
       stubEnrich
     );
 
@@ -109,7 +109,7 @@ describe('ingestRepo', () => {
       config,
       itemsRepo,
       categoriesRepo,
-      { name: 'Fixture Remote', source: { kind: 'url', url: fixtureRepo } },
+      { type: 'repo', name: 'Fixture Remote', source: { kind: 'url', url: fixtureRepo } },
       stubEnrich
     );
 
@@ -146,11 +146,38 @@ describe('ingestRepo', () => {
         config,
         itemsRepo,
         categoriesRepo,
-        { name: 'Malicious', source: { kind: 'url', url: '--upload-pack=/bin/sh' } },
+        { type: 'repo', name: 'Malicious', source: { kind: 'url', url: '--upload-pack=/bin/sh' } },
         stubEmptyEnrich
       )
     ).rejects.toThrow('invalid repository url');
 
     expect(simpleGit).not.toHaveBeenCalled();
+  });
+
+  it('accepts type=plugin and creates the item with that type, passing it through to enrichment', async () => {
+    const fixtureRepo = createFixtureRepo();
+    const config = loadConfig({ SKILLVAULT_HOME: home } as NodeJS.ProcessEnv);
+    fs.mkdirSync(config.reposDir, { recursive: true });
+
+    const db = createDb(':memory:');
+    const itemsRepo = new ItemsRepository(db);
+    const categoriesRepo = new CategoriesRepository(db);
+
+    let capturedItemType = '';
+    const spyEnrich = async (_config: unknown, itemType: string): Promise<EnrichmentResult> => {
+      capturedItemType = itemType;
+      return stubEnrich();
+    };
+
+    const item = await ingestRepo(
+      config,
+      itemsRepo,
+      categoriesRepo,
+      { type: 'plugin', name: 'Fixture Plugin', source: { kind: 'url', url: fixtureRepo } },
+      spyEnrich
+    );
+
+    expect(item.type).toBe('plugin');
+    expect(capturedItemType).toBe('plugin');
   });
 });

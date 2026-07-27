@@ -13,6 +13,7 @@ import type { Item } from '../types.js';
 export type RepoSource = { kind: 'local_path'; path: string } | { kind: 'url'; url: string };
 
 export interface IngestRepoInput {
+  type: 'repo' | 'plugin';
   name: string;
   source: RepoSource;
 }
@@ -70,11 +71,11 @@ export async function ingestRepo(
     downloadStatus = 'not_downloaded';
   }
 
-  const enrichment = await enrich(config, 'repo', readme || sourceValue);
+  const enrichment = await enrich(config, input.type, readme || sourceValue);
   const category = enrichment.category ? categoriesRepo.findOrCreate(enrichment.category) : null;
 
   const newItem: NewItem = {
-    type: 'repo',
+    type: input.type,
     name: input.name,
     sourceType: input.source.kind,
     sourceValue,
