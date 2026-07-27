@@ -63,4 +63,13 @@ describe('GlobalInstallAction', () => {
     await waitFor(() => expect(onUpdated).toHaveBeenCalledWith(updatedItem));
     expect(client.installItem).toHaveBeenCalledWith(1);
   });
+
+  it('shows the real install path as a tooltip on the "Instalado" badge', () => {
+    render(
+      <GlobalInstallAction
+        item={sampleItem({ installedGlobally: true, installedPath: 'C:\\Users\\me\\.claude\\skills\\minha-skill' })}
+      />
+    );
+    expect(screen.getByText('Instalado')).toHaveAttribute('title', 'C:\\Users\\me\\.claude\\skills\\minha-skill');
+  });
 });

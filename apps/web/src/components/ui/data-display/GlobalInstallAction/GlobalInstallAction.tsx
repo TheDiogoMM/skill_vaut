@@ -18,7 +18,7 @@ export function GlobalInstallAction({ item, onUpdated }: GlobalInstallActionProp
 
   if (item.installedGlobally) {
     return (
-      <AvailabilityBadge tone="positive" icon="check-circle-2">
+      <AvailabilityBadge tone="positive" icon="check-circle-2" title={item.installedPath ?? undefined}>
         Instalado
       </AvailabilityBadge>
     );
