@@ -17,6 +17,8 @@ export interface SkillVaultConfig {
   port: number;
   claudeSkillsDir: string;
   claudeConfigPath: string;
+  githubToken: string | null;
+  smitheryApiKey: string | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): SkillVaultConfig {
@@ -37,6 +39,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): SkillVaultConf
     port: Number(env.PORT) || 3001,
     claudeSkillsDir: env.CLAUDE_SKILLS_DIR || path.join(os.homedir(), '.claude', 'skills'),
     claudeConfigPath: env.CLAUDE_CONFIG_PATH || path.join(os.homedir(), '.claude.json'),
+    githubToken: env.GITHUB_TOKEN || null,
+    smitheryApiKey: env.SMITHERY_API_KEY || null,
   };
 }
 

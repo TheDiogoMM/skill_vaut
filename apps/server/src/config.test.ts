@@ -40,6 +40,19 @@ describe('loadConfig', () => {
     expect(config.claudeSkillsDir).toBe('/tmp/custom-skills');
     expect(config.claudeConfigPath).toBe('/tmp/custom-claude.json');
   });
+
+  it('defaults githubToken and smitheryApiKey to null, and honors overrides', () => {
+    const empty = loadConfig({} as NodeJS.ProcessEnv);
+    expect(empty.githubToken).toBeNull();
+    expect(empty.smitheryApiKey).toBeNull();
+
+    const configured = loadConfig({
+      GITHUB_TOKEN: 'ghp_test',
+      SMITHERY_API_KEY: 'smithery_test',
+    } as NodeJS.ProcessEnv);
+    expect(configured.githubToken).toBe('ghp_test');
+    expect(configured.smitheryApiKey).toBe('smithery_test');
+  });
 });
 
 describe('ensureSkillVaultDirs', () => {
