@@ -34,7 +34,7 @@ describe('recommend routes', () => {
   });
 
   it('returns recommendations and saves the consulta on success', async () => {
-    vi.mocked(getRecommendations).mockResolvedValue({ skills: [], repos: [], mcps: [], plugins: [] });
+    vi.mocked(getRecommendations).mockResolvedValue({ skills: [], repos: [], mcps: [], plugins: [], externalSuggestions: [] });
 
     const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
     const response = await app.inject({
@@ -44,7 +44,7 @@ describe('recommend routes', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ skills: [], repos: [], mcps: [], plugins: [] });
+    expect(response.json()).toEqual({ skills: [], repos: [], mcps: [], plugins: [], externalSuggestions: [] });
 
     const history = await app.inject({ method: 'GET', url: '/api/consultas' });
     expect(history.json()).toHaveLength(1);
@@ -68,7 +68,7 @@ describe('recommend routes', () => {
   });
 
   it('returns the last 10 consultas ordered by most recent first', async () => {
-    vi.mocked(getRecommendations).mockResolvedValue({ skills: [], repos: [], mcps: [], plugins: [] });
+    vi.mocked(getRecommendations).mockResolvedValue({ skills: [], repos: [], mcps: [], plugins: [], externalSuggestions: [] });
 
     const app = buildApp({ db: createDb(':memory:'), config: makeConfig(), webDistPath: noDistPath });
     for (let i = 0; i < 12; i++) {
