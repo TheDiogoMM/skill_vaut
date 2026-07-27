@@ -44,4 +44,13 @@ describe('Sidebar', () => {
     );
     expect(screen.getByRole('link', { name: 'Recomendar' })).toHaveAttribute('href', '/recommend');
   });
+
+  it('renders a navigation link to the discover route', () => {
+    render(
+      <MemoryRouter>
+        <Sidebar theme="dark" onToggleTheme={vi.fn()} />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('link', { name: 'Descobrir' })).toHaveAttribute('href', '/discover');
+  });
 });
