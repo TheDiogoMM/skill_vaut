@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type Database from 'better-sqlite3';
 import { createDb } from '../db/connection.js';
 import { loadConfig } from '../config.js';
@@ -7,6 +7,11 @@ import { CategoriesRepository } from '../db/repositories/categories.js';
 import { getRecommendations } from './recommend.js';
 import type { RecommendedItem } from '../types.js';
 import type { GlobalStatus } from '../global-status.js';
+import type { DiscoverResult } from '../discover/types.js';
+
+vi.mock('../discover/aggregate.js', () => ({ discoverItems: vi.fn() }));
+
+import { discoverItems } from '../discover/aggregate.js';
 
 function fakeResponse(body: unknown, ok = true): Response {
   return { ok, json: async () => body } as Response;
@@ -30,6 +35,19 @@ function baseNewItem(overrides: Partial<NewItem> = {}): NewItem {
   };
 }
 
+function fakeDiscoverResult(overrides: Partial<DiscoverResult> = {}): DiscoverResult {
+  return {
+    source: 'github',
+    itemType: 'mcp',
+    name: 'someone/pdf-tool',
+    description: null,
+    url: 'https://github.com/someone/pdf-tool',
+    rating: { kind: 'stars', value: 10 },
+    verified: false,
+    ...overrides,
+  };
+}
+
 describe('getRecommendations', () => {
   let db: Database.Database;
   let itemsRepo: ItemsRepository;
@@ -39,6 +57,7 @@ describe('getRecommendations', () => {
     db = createDb(':memory:');
     itemsRepo = new ItemsRepository(db);
     categoriesRepo = new CategoriesRepository(db);
+    vi.mocked(discoverItems).mockResolvedValue([]);
   });
 
   it('returns empty blocks without calling the LLM when the catalog is empty', async () => {
@@ -48,7 +67,8 @@ describe('getRecommendations', () => {
     }) as typeof fetch;
 
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'ideia', fetchImpl);
-    expect(result).toEqual({ skills: [], repos: [], mcps: [], plugins: [] });
+    expect(result).toEqual({ skills: [], repos: [], mcps: [], plugins: [], externalSuggestions: [] });
+    expect(discoverItems).not.toHaveBeenCalled();
   });
 
   it('resolves ids from the Ollama response into full items, discarding unknown ids and wrong-type ids', async () => {
@@ -65,13 +85,20 @@ describe('getRecommendations', () => {
       repos: [{ id: repoItem.id, motivo: 'Bom ponto de partida' }],
       mcps: [],
       plugins: [],
+      termo_busca: 'pdf',
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
 
     expect(result?.skills).toEqual([
-      { ...skill, installedGlobally: false, hasRedactedSecret: null, installedPath: null, motivo: 'Ajuda a extrair texto de PDFs' },
+      {
+        ...skill,
+        installedGlobally: false,
+        hasRedactedSecret: null,
+        installedPath: null,
+        motivo: 'Ajuda a extrair texto de PDFs',
+      },
     ]);
     expect(result?.repos).toEqual([
       { ...repoItem, installedGlobally: null, hasRedactedSecret: null, installedPath: null, motivo: 'Bom ponto de partida' },
@@ -91,6 +118,7 @@ describe('getRecommendations', () => {
       repos: [],
       mcps: [],
       plugins: [],
+      termo_busca: 'pdf',
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
@@ -110,6 +138,7 @@ describe('getRecommendations', () => {
       repos: [],
       mcps: [],
       plugins: [],
+      termo_busca: 'pdf',
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
@@ -126,7 +155,13 @@ describe('getRecommendations', () => {
   it('falls back to Gemini when Ollama fails', async () => {
     const skill = itemsRepo.create(baseNewItem());
     const config = loadConfig({ GEMINI_API_KEY: 'key' } as NodeJS.ProcessEnv);
-    const raw = JSON.stringify({ skills: [{ id: skill.id, motivo: 'via gemini' }], repos: [], mcps: [], plugins: [] });
+    const raw = JSON.stringify({
+      skills: [{ id: skill.id, motivo: 'via gemini' }],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      termo_busca: 'pdf',
+    });
     const fetchImpl = (async (url: string) => {
       if (url.includes('generativelanguage')) {
         return fakeResponse({ candidates: [{ content: { parts: [{ text: raw }] } }] });
@@ -147,6 +182,16 @@ describe('getRecommendations', () => {
     expect(result).toBeNull();
   });
 
+  it('returns null when termo_busca is missing from the LLM response', async () => {
+    const skill = itemsRepo.create(baseNewItem());
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const raw = JSON.stringify({ skills: [{ id: skill.id, motivo: 'x' }], repos: [], mcps: [], plugins: [] });
+    const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
+
+    const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'ideia', fetchImpl);
+    expect(result).toBeNull();
+  });
+
   it('resolves plugin ids into full items, same as the other three buckets', async () => {
     const plugin = itemsRepo.create(baseNewItem({ type: 'plugin', name: 'My Plugin' }));
 
@@ -156,6 +201,7 @@ describe('getRecommendations', () => {
       repos: [],
       mcps: [],
       plugins: [{ id: plugin.id, motivo: 'Resolve isso' }],
+      termo_busca: 'plugin',
     });
     const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
 
@@ -164,5 +210,42 @@ describe('getRecommendations', () => {
     expect(result?.plugins).toEqual([
       { ...plugin, installedGlobally: null, hasRedactedSecret: null, installedPath: null, motivo: 'Resolve isso' },
     ]);
+  });
+
+  it('populates externalSuggestions from discoverItems, using the LLM-provided termo_busca', async () => {
+    const skill = itemsRepo.create(baseNewItem());
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const raw = JSON.stringify({
+      skills: [{ id: skill.id, motivo: 'x' }],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      termo_busca: 'leitor de pdf',
+    });
+    const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
+    vi.mocked(discoverItems).mockResolvedValue([fakeDiscoverResult()]);
+
+    const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
+
+    expect(discoverItems).toHaveBeenCalledWith('leitor de pdf', undefined, config, fetchImpl);
+    expect(result?.externalSuggestions).toEqual([fakeDiscoverResult()]);
+  });
+
+  it('excludes an external suggestion whose url matches an item already in the catalog', async () => {
+    const skill = itemsRepo.create(baseNewItem({ sourceValue: 'https://github.com/someone/pdf-tool' }));
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    const raw = JSON.stringify({
+      skills: [{ id: skill.id, motivo: 'x' }],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      termo_busca: 'pdf',
+    });
+    const fetchImpl = (async () => fakeResponse({ response: raw })) as typeof fetch;
+    vi.mocked(discoverItems).mockResolvedValue([fakeDiscoverResult({ url: 'https://github.com/someone/pdf-tool' })]);
+
+    const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
+
+    expect(result?.externalSuggestions).toEqual([]);
   });
 });

@@ -1,3 +1,5 @@
+import type { DiscoverResult } from './discover/types.js';
+
 export type ItemType = 'skill' | 'repo' | 'mcp' | 'plugin';
 export type SourceType = 'local_path' | 'upload' | 'url' | 'manual';
 export type EnrichmentSource = 'ollama' | 'gemini' | 'manual';
@@ -51,4 +53,5 @@ export interface RecommendResult {
   repos: RecommendedItem[];
   mcps: RecommendedItem[];
   plugins: RecommendedItem[];
+  externalSuggestions: DiscoverResult[];
 }

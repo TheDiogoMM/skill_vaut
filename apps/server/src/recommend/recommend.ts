@@ -7,6 +7,7 @@ import { callGemini } from '../enrichment/gemini.js';
 import { buildRecommendPrompt, RECOMMEND_JSON_SCHEMA, type CatalogItemForPrompt } from './prompt.js';
 import { parseRecommendJson, type ParsedRecommendation } from './parse.js';
 import { computeGlobalStatus } from '../global-status.js';
+import { resolveExternalSuggestions } from './externalSuggestions.js';
 
 function toCatalogEntry(item: Item, categoryNameById: Map<number, string>): CatalogItemForPrompt {
   return {
@@ -47,7 +48,7 @@ export async function getRecommendations(
 ): Promise<RecommendResult | null> {
   const allItems = itemsRepo.list();
   if (allItems.length === 0) {
-    return { skills: [], repos: [], mcps: [], plugins: [] };
+    return { skills: [], repos: [], mcps: [], plugins: [], externalSuggestions: [] };
   }
 
   const categoryNameById = new Map(categoriesRepo.list().map((c) => [c.id, c.name]));
@@ -64,10 +65,13 @@ export async function getRecommendations(
 
   if (!parsed) return null;
 
+  const externalSuggestions = await resolveExternalSuggestions(parsed.termoBusca, allItems, config, fetchImpl);
+
   return {
     skills: resolveList(parsed.skills, 'skill', itemsRepo, config),
     repos: resolveList(parsed.repos, 'repo', itemsRepo, config),
     mcps: resolveList(parsed.mcps, 'mcp', itemsRepo, config),
     plugins: resolveList(parsed.plugins, 'plugin', itemsRepo, config),
+    externalSuggestions,
   };
 }
