@@ -71,10 +71,10 @@ describe('getRecommendations', () => {
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
 
     expect(result?.skills).toEqual([
-      { ...skill, installedGlobally: false, hasRedactedSecret: null, motivo: 'Ajuda a extrair texto de PDFs' },
+      { ...skill, installedGlobally: false, hasRedactedSecret: null, installedPath: null, motivo: 'Ajuda a extrair texto de PDFs' },
     ]);
     expect(result?.repos).toEqual([
-      { ...repoItem, installedGlobally: null, hasRedactedSecret: null, motivo: 'Bom ponto de partida' },
+      { ...repoItem, installedGlobally: null, hasRedactedSecret: null, installedPath: null, motivo: 'Bom ponto de partida' },
     ]);
     expect(result?.mcps).toEqual([]);
   });
@@ -97,7 +97,7 @@ describe('getRecommendations', () => {
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'app de PDFs', fetchImpl);
 
     expect(result?.skills).toEqual([
-      { ...skill, installedGlobally: false, hasRedactedSecret: null, motivo: 'primeira menção' },
+      { ...skill, installedGlobally: false, hasRedactedSecret: null, installedPath: null, motivo: 'primeira menção' },
     ]);
   });
 
@@ -119,6 +119,7 @@ describe('getRecommendations', () => {
 
     expect(resolvedSkill).toHaveProperty('installedGlobally');
     expect(resolvedSkill).toHaveProperty('hasRedactedSecret');
+    expect(resolvedSkill).toHaveProperty('installedPath');
     expect(resolvedSkill?.installedGlobally).toBe(false);
   });
 
@@ -161,7 +162,7 @@ describe('getRecommendations', () => {
     const result = await getRecommendations(config, itemsRepo, categoriesRepo, 'ideia', fetchImpl);
 
     expect(result?.plugins).toEqual([
-      { ...plugin, installedGlobally: null, hasRedactedSecret: null, motivo: 'Resolve isso' },
+      { ...plugin, installedGlobally: null, hasRedactedSecret: null, installedPath: null, motivo: 'Resolve isso' },
     ]);
   });
 });
