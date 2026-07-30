@@ -36,7 +36,7 @@ function fakeResult(overrides: Partial<DiscoverResult> = {}): DiscoverResult {
     name: 'someone/repo',
     description: null,
     url: 'https://github.com/someone/repo',
-    rating: { kind: 'stars', value: 10 },
+    rating: { kind: 'stars', value: 60 },
     verified: false,
     ...overrides,
   };
@@ -58,9 +58,9 @@ describe('resolveExternalSuggestions', () => {
   it('sorts results by rating value descending', async () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     vi.mocked(discoverItems).mockResolvedValue([
-      fakeResult({ url: 'https://a', rating: { kind: 'stars', value: 5 } }),
-      fakeResult({ url: 'https://b', rating: { kind: 'stars', value: 50 } }),
-      fakeResult({ url: 'https://c', rating: { kind: 'use_count', value: 20 } }),
+      fakeResult({ url: 'https://a', rating: { kind: 'stars', value: 60 } }),
+      fakeResult({ url: 'https://b', rating: { kind: 'stars', value: 90 } }),
+      fakeResult({ url: 'https://c', rating: { kind: 'use_count', value: 70 } }),
     ]);
 
     const result = await resolveExternalSuggestions('pdf', [], config, fetch);
@@ -72,7 +72,7 @@ describe('resolveExternalSuggestions', () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     vi.mocked(discoverItems).mockResolvedValue([
       fakeResult({ url: 'https://official', rating: { kind: 'official', value: null } }),
-      fakeResult({ url: 'https://stars', rating: { kind: 'stars', value: 1 } }),
+      fakeResult({ url: 'https://stars', rating: { kind: 'stars', value: 60 } }),
     ]);
 
     const result = await resolveExternalSuggestions('pdf', [], config, fetch);
@@ -84,13 +84,28 @@ describe('resolveExternalSuggestions', () => {
     const config = loadConfig({} as NodeJS.ProcessEnv);
     vi.mocked(discoverItems).mockResolvedValue(
       Array.from({ length: 8 }, (_, i) =>
-        fakeResult({ url: `https://item-${i}`, rating: { kind: 'stars', value: i } })
+        fakeResult({ url: `https://item-${i}`, rating: { kind: 'stars', value: 50 + i } })
       )
     );
 
     const result = await resolveExternalSuggestions('pdf', [], config, fetch);
 
     expect(result).toHaveLength(5);
+  });
+
+  it('excludes non-official results with a rating below 50', async () => {
+    const config = loadConfig({} as NodeJS.ProcessEnv);
+    vi.mocked(discoverItems).mockResolvedValue([
+      fakeResult({ url: 'https://low-stars', rating: { kind: 'stars', value: 49 } }),
+      fakeResult({ url: 'https://ok-stars', rating: { kind: 'stars', value: 50 } }),
+      fakeResult({ url: 'https://low-use-count', rating: { kind: 'use_count', value: 10 } }),
+      fakeResult({ url: 'https://no-value', rating: { kind: 'stars', value: null } }),
+      fakeResult({ url: 'https://official', rating: { kind: 'official', value: null } }),
+    ]);
+
+    const result = await resolveExternalSuggestions('pdf', [], config, fetch);
+
+    expect(result.map((r) => r.url).sort()).toEqual(['https://official', 'https://ok-stars']);
   });
 
   it('calls discoverItems with no type filter, searching across skill/mcp/plugin', async () => {

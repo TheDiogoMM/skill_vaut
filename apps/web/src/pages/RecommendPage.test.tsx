@@ -364,4 +364,37 @@ describe('RecommendPage', () => {
     expect(await screen.findByText('Lida com PDFs')).toBeInTheDocument();
     expect(screen.queryByText('Handles PDFs')).not.toBeInTheDocument();
   });
+
+  it('copies a text summary of the recommendation to the clipboard', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    // @testing-library/user-event >=14.5 attaches a getter-only navigator.clipboard stub
+    // as soon as userEvent.setup() runs, so Object.assign (a [[Set]]) throws
+    // "Cannot set property clipboard of #<Navigator> which has only a getter".
+    // The stub property is configurable, so redefine it instead of assigning to it.
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    vi.spyOn(api, 'listConsultas').mockResolvedValue([]);
+    vi.spyOn(api, 'getRecommendations').mockResolvedValue({
+      skills: [{ ...sampleItem(), motivo: 'Ajuda a extrair texto de PDFs' }],
+      repos: [],
+      mcps: [],
+      plugins: [],
+      externalSuggestions: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <RecommendPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText('Ideia do projeto'), 'app de leitura de PDFs');
+    await user.click(screen.getByRole('button', { name: 'Recomendar' }));
+    await screen.findByRole('link', { name: 'PDF Parser' });
+
+    await user.click(screen.getByRole('button', { name: 'Copiar resumo' }));
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('PDF Parser — /skillvault/skills/pdf-parser'));
+    expect(await screen.findByRole('button', { name: 'Copiado!' })).toBeInTheDocument();
+  });
 });

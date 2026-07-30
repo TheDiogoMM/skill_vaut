@@ -42,7 +42,7 @@ function fakeDiscoverResult(overrides: Partial<DiscoverResult> = {}): DiscoverRe
     name: 'someone/pdf-tool',
     description: null,
     url: 'https://github.com/someone/pdf-tool',
-    rating: { kind: 'stars', value: 10 },
+    rating: { kind: 'stars', value: 60 },
     verified: false,
     ...overrides,
   };

@@ -4,10 +4,12 @@ import { getRecommendations, listConsultas, translateDiscoverResults } from '../
 import type { Consulta, Item, RecommendedItem, RecommendResult } from '../types.js';
 import { Textarea } from '../components/ui/forms/Textarea/Textarea.js';
 import { Button } from '../components/ui/core/Button/Button.js';
+import { Icon } from '../components/ui/core/Icon/Icon.js';
 import { StatusMessage } from '../components/ui/feedback/StatusMessage/StatusMessage.js';
 import { RepoDownloadAction } from '../components/ui/data-display/RepoDownloadAction/RepoDownloadAction.js';
 import { GlobalInstallAction } from '../components/ui/data-display/GlobalInstallAction/GlobalInstallAction.js';
 import { DiscoverResultCard } from '../components/DiscoverResultCard.js';
+import { buildRecommendSummary } from '../lib/recommendSummary.js';
 
 const EMPTY_MESSAGES = {
   skills: 'Nenhuma skill do catálogo cobre essa necessidade.',
@@ -75,6 +77,7 @@ export function RecommendPage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<RecommendResult | null>(null);
   const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     listConsultas()
@@ -119,6 +122,13 @@ export function RecommendPage() {
     }
   }
 
+  async function handleCopySummary() {
+    if (!result) return;
+    await navigator.clipboard.writeText(buildRecommendSummary(ideia, result));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <h1
@@ -145,6 +155,16 @@ export function RecommendPage() {
 
       {result && (
         <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              iconLeft={<Icon name={copied ? 'check' : 'copy'} size={13} />}
+              onClick={handleCopySummary}
+            >
+              {copied ? 'Copiado!' : 'Copiar resumo'}
+            </Button>
+          </div>
           <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
             <ResultColumn
               title="Skills"
